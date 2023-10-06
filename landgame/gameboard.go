@@ -32,25 +32,32 @@ func (gb Gameboard) String() string {
 }
 
 type Block struct {
-	Occupied_by Entity
+	Typ        BlockType
+	Belongs_to Player
 }
 
 func (b Block) String() string {
-	return b.Occupied_by.Belongs_to.ColorString(fmt.Sprintf("%v", b.Occupied_by.Etype))
+	return b.Belongs_to.ColorString(fmt.Sprintf("%v", b.Typ))
 }
 
-type EntityType int
+var (
+	OpenBlock   Block = Block{Typ: OpenSpace, Belongs_to: Player{}}
+	RobBlock    Block = Block{Typ: Rob, Belongs_to: Player{}}
+	AttackBlock Block = Block{Typ: Attack, Belongs_to: Player{}}
+)
+
+type BlockType int
 
 const (
-	OpenSpace EntityType = iota
+	OpenSpace BlockType = iota
 	PlayerHome
 	PlayerLand
 	Rob
 	Attack
 )
 
-func (e EntityType) String() string {
-	return [...]string{"   ", " H ", " # ", " R ", " A "}[e]
+func (t BlockType) String() string {
+	return [...]string{"   ", " H ", " # ", " R ", " A "}[t]
 }
 
 type Color int
@@ -88,15 +95,6 @@ func (p Player) ColorString(s string) string {
 		return color.WhiteString(s)
 	}
 	return s
-}
-
-type Entity struct {
-	Etype      EntityType
-	Belongs_to Player
-}
-
-func (e Entity) String() string {
-	return fmt.Sprintf("Type: %v, BelongsTo: %v", e.Etype, e.Belongs_to)
 }
 
 type Player struct {

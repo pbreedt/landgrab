@@ -9,13 +9,13 @@ func (g *Gameboard) Initialize(players ...Player) {
 	// areas := StakePlayerAreas(len(players))
 	for i := 0; i < len(players); i++ {
 		x, y := g.GetRandomPosition()
-		g[x][y] = Block{Occupied_by: Entity{Etype: PlayerHome, Belongs_to: players[i]}}
+		g[x][y] = Block{Typ: PlayerHome, Belongs_to: players[i]}
 
 		x, y = g.GetRandomPosition()
-		g[x][y] = Block{Occupied_by: Entity{Etype: Rob}}
+		g[x][y] = RobBlock
 
 		x, y = g.GetRandomPosition()
-		g[x][y] = Block{Occupied_by: Entity{Etype: Attack}}
+		g[x][y] = AttackBlock
 	}
 }
 
@@ -24,10 +24,10 @@ func (g Gameboard) GetRandomPosition() (int, int) {
 		x := rand.Intn(boardsize)
 		y := rand.Intn(boardsize)
 
-		if g[x][y].Occupied_by.Etype == OpenSpace {
+		if g[x][y].Typ == OpenSpace {
 			return x, y
 		} else {
-			log.Default().Printf("%d,%d occupied by %s", x, y, g[x][y].Occupied_by)
+			log.Default().Printf("%d,%d occupied by %s", x, y, g[x][y].Belongs_to)
 		}
 	}
 }
