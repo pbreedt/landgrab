@@ -6,20 +6,24 @@ import (
 )
 
 func (g *Gameboard) Initialize(players ...Player) {
+	g.players = append(g.players, players...)
 	areas := StakePlayerAreas(len(players))
 
 	for i := 0; i < len(players); i++ {
 		// assign 1 Home block in player area
 		x, y := g.GetRandomPosition(areas[i])
-		g[y][x] = Block{Marker: " H ", Belongs_to: players[i]}
+		g.board[y][x] = Block{Marker: " H ", Belongs_to: &players[i]}
+		// log.Default().Printf("done with home for %s", players[i].Name)
 
 		// assign 1 Rob block in player area
 		x, y = g.GetRandomPosition(areas[i])
-		g[y][x] = RobBlock
+		g.board[y][x] = RobBlock
+		// log.Default().Printf("done with rob for %s", players[i].Name)
 
 		// assign 1 Attack block in player area
 		x, y = g.GetRandomPosition(areas[i])
-		g[y][x] = AttackBlock
+		g.board[y][x] = AttackBlock
+		// log.Default().Printf("done with attack for %s", players[i].Name)
 	}
 
 	// visualize player areas
@@ -33,10 +37,10 @@ func (g Gameboard) GetRandomPosition(area Area) (int, int) {
 		x := rand.Intn(area.endX-area.startX) + area.startX
 		y := rand.Intn(area.endY-area.startY) + area.startY
 
-		if g[y][x].Marker == OpenBlock.Marker {
+		if g.board[y][x].Marker == OpenBlock.Marker {
 			return x, y
 		} else {
-			log.Default().Printf("%d,%d occupied by %s", x, y, g[y][x].Belongs_to)
+			log.Default().Printf("%d,%d occupied by %s", x, y, g.board[y][x].Belongs_to)
 		}
 	}
 }
@@ -121,11 +125,11 @@ func StakePlayerAreas(players int) []Area {
 }
 
 func (g *Gameboard) MarkArea(area Area, marker string) {
-	b := Block{Marker: marker, Belongs_to: Player{}}
+	b := Block{Marker: marker}
 
 	for x := area.startX; x <= area.endX; x++ {
 		for y := area.startY; y <= area.endY; y++ {
-			g[y][x] = b
+			g.board[y][x] = b
 		}
 	}
 }

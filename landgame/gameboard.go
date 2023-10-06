@@ -8,23 +8,30 @@ import (
 
 const boardsize int = 12
 
-type Gameboard [boardsize][boardsize]Block
+type Gameboard struct {
+	board   [boardsize][boardsize]Block
+	players []Player
+}
 
+// Intended for initial configuration of gameboard
 func NewGameboard() Gameboard {
 	var gb Gameboard
-	for i := 0; i < boardsize; i++ {
-		for j := 0; j < boardsize; j++ {
-		}
-	}
+	// for i := 0; i < boardsize; i++ {
+	// 	for j := 0; j < boardsize; j++ {
+	// 	}
+	// }
 	return gb
 }
 
 func (gb Gameboard) String() string {
 	bsh := ""
+	for _, p := range gb.players {
+		bsh += ColorString(fmt.Sprintf("Player %s in %s\n", p.Name, p.Color), p.Color)
+	}
 	bs := ""
 	for y := 0; y < boardsize; y++ {
 		for x := 0; x < boardsize; x++ {
-			bs += fmt.Sprintf("[%+v](%2d,%2d)", gb[y][x], x, y)
+			bs += fmt.Sprintf("[%+v](%2d,%2d)", gb.board[y][x], x, y)
 		}
 		bs += "\n"
 	}
@@ -33,17 +40,20 @@ func (gb Gameboard) String() string {
 
 type Block struct {
 	Marker     string
-	Belongs_to Player
+	Belongs_to *Player
 }
 
 func (b Block) String() string {
-	return b.Belongs_to.ColorString(fmt.Sprintf("%3s", b.Marker))
+	if b.Belongs_to != nil {
+		return ColorString(fmt.Sprintf("%3s", b.Marker), b.Belongs_to.Color)
+	}
+	return fmt.Sprintf("%3s", b.Marker)
 }
 
 var (
-	OpenBlock   Block = Block{Marker: "", Belongs_to: Player{}}
-	RobBlock    Block = Block{Marker: " R ", Belongs_to: Player{}}
-	AttackBlock Block = Block{Marker: " A ", Belongs_to: Player{}}
+	OpenBlock   Block = Block{Marker: ""}
+	RobBlock    Block = Block{Marker: " R "}
+	AttackBlock Block = Block{Marker: " A "}
 )
 
 type Color int
@@ -63,8 +73,9 @@ func (e Color) String() string {
 	return [...]string{"Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"}[e]
 }
 
-func (p Player) ColorString(s string) string {
-	switch p.Color {
+func ColorString(s string, c Color) string {
+	// log.Default().Printf("print '%s' in %s", s, c)
+	switch c {
 	case Red:
 		return color.RedString(s)
 	case Green:
@@ -89,5 +100,5 @@ type Player struct {
 }
 
 func (p Player) String() string {
-	return p.ColorString(p.Name)
+	return ColorString(p.Name, p.Color)
 }

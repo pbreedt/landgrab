@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pbreedt/landgame/landgame"
-	"github.com/pbreedt/stdio/input"
 )
 
 var (
@@ -16,11 +16,12 @@ var (
 	Cyan    = landgame.Player{Name: "Cyan", Color: landgame.Cyan}
 	White   = landgame.Player{Name: "White", Color: landgame.White}
 
-	Players [7]landgame.Player = [7]landgame.Player{Red, Green, Yellow, Blue, Magenta, Cyan, White}
+	PlayerColors [7]landgame.Player = [7]landgame.Player{Red, Green, Yellow, Blue, Magenta, Cyan, White}
 )
 
 func main() {
-	num_players, _ := input.ReadInt("How many players (2 / 3 / 4) ? ")
+	// num_players, _ := input.ReadInt("How many players (2 / 3 / 4) ? ")
+	num_players := 3
 	if num_players < 2 || num_players > 4 {
 		fmt.Println("Incorrect number of players selected.")
 		return
@@ -30,26 +31,13 @@ func main() {
 	gameboard := landgame.NewGameboard()
 
 	for i := 0; i < num_players; i++ {
-		player, _ := input.ReadString(fmt.Sprintf("Name for player %d? ", i))
-		Players[i].Name = player
-		players = append(players, Players[i])
+		// name, _ := input.ReadString(fmt.Sprintf("Name for player %d? ", i))
+		name := strconv.Itoa(i)
+		player := PlayerColors[i]
+		player.Name = name
+		players = append(players, player)
 	}
 
-	// x, y := gameboard.GetRandomPosition()
-	// gameboard[x][y] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.PlayerLand, Belongs_to: Red}}
-	// // gameboard[2][5] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.Grass, Belongs_to: Green}}
-	// x, y = gameboard.GetRandomPosition()
-	// gameboard[x][y] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.PlayerLand, Belongs_to: Yellow}}
-	// // gameboard[4][5] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.Grass, Belongs_to: Blue}}
-	// x, y = gameboard.GetRandomPosition()
-	// gameboard[x][y] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.PlayerLand, Belongs_to: Magenta}}
-	// // gameboard[6][5] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.Grass, Belongs_to: Cyan}}
-	// // gameboard[7][5] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.Grass, Belongs_to: White}}
-
-	// for i := 0; i < 20; i++ {
-	// 	x, y = gameboard.GetRandomPosition()
-	// 	gameboard[x][y] = landgame.Block{Occupied_by: landgame.Entity{Etype: landgame.PlayerLand, Belongs_to: Magenta}}
-	// }
 	gameboard.Initialize(players...)
 
 	fmt.Println(gameboard)
