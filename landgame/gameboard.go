@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const boardsize int = 10
+const boardsize int = 12
 
 type Gameboard [boardsize][boardsize]Block
 
@@ -22,9 +22,9 @@ func NewGameboard() Gameboard {
 func (gb Gameboard) String() string {
 	bsh := ""
 	bs := ""
-	for i := 0; i < boardsize; i++ {
-		for j := 0; j < boardsize; j++ {
-			bs += fmt.Sprintf("[%+v](%d,%d)", gb[i][j], i, j)
+	for y := 0; y < boardsize; y++ {
+		for x := 0; x < boardsize; x++ {
+			bs += fmt.Sprintf("[%+v](%2d,%2d)", gb[y][x], x, y)
 		}
 		bs += "\n"
 	}
@@ -32,33 +32,19 @@ func (gb Gameboard) String() string {
 }
 
 type Block struct {
-	Typ        BlockType
+	Marker     string
 	Belongs_to Player
 }
 
 func (b Block) String() string {
-	return b.Belongs_to.ColorString(fmt.Sprintf("%v", b.Typ))
+	return b.Belongs_to.ColorString(fmt.Sprintf("%3s", b.Marker))
 }
 
 var (
-	OpenBlock   Block = Block{Typ: OpenSpace, Belongs_to: Player{}}
-	RobBlock    Block = Block{Typ: Rob, Belongs_to: Player{}}
-	AttackBlock Block = Block{Typ: Attack, Belongs_to: Player{}}
+	OpenBlock   Block = Block{Marker: "", Belongs_to: Player{}}
+	RobBlock    Block = Block{Marker: " R ", Belongs_to: Player{}}
+	AttackBlock Block = Block{Marker: " A ", Belongs_to: Player{}}
 )
-
-type BlockType int
-
-const (
-	OpenSpace BlockType = iota
-	PlayerHome
-	PlayerLand
-	Rob
-	Attack
-)
-
-func (t BlockType) String() string {
-	return [...]string{"   ", " H ", " # ", " R ", " A "}[t]
-}
 
 type Color int
 
