@@ -1,8 +1,12 @@
 package landgame
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
+	"strings"
+
+	"github.com/pbreedt/stdio/input"
 )
 
 func (g *Gameboard) Initialize(players ...Player) {
@@ -36,9 +40,27 @@ func (g *Gameboard) Initialize(players ...Player) {
 }
 
 func (g *Gameboard) Play() {
-	for {
+	playerTurn := 0
 
+	for {
+		fmt.Println(g)
+		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? ", g.players[playerTurn].Name))
+		fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
+
+		//do move:
+		switch strings.ToUpper(move) {
+		case "Q":
+			return
+		default:
+		}
+
+		//next turn:
+		playerTurn++
+		if playerTurn >= len(g.players) {
+			playerTurn = 0
+		}
 	}
+
 }
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {

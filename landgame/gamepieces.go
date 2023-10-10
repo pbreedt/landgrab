@@ -80,6 +80,9 @@ func RotateAntiClockwise(num uint16) string {
 	return result
 }
 
+//TODO: implement FlipH & FlipV
+//func FlipH(num uint16) string {}
+
 func BinaryStringToInt(binaryStr string) (uint16, error) {
 	if i, err := strconv.ParseInt(binaryStr, 2, 32); err != nil {
 		return 0, err

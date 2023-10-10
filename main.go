@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/pbreedt/landgame/landgame"
 )
@@ -32,15 +31,14 @@ func main() {
 
 	for i := 0; i < num_players; i++ {
 		// name, _ := input.ReadString(fmt.Sprintf("Name for player %d? ", i))
-		name := strconv.Itoa(i)
 		player := PlayerColors[i]
-		player.Name = name
+		player.Name = []string{"Jan", "Piet", "Koos"}[i]
 		players = append(players, player)
 	}
 
 	gameboard.Initialize(players...)
 
-	// fmt.Println(gameboard)
+	gameboard.Play()
 
 	// num1 := uint16(rand.Intn(math.MaxUint16))
 	// num2 := uint16(rand.Intn(math.MaxUint16))
@@ -51,9 +49,4 @@ func main() {
 	// result := landgame.ToBinaryGrid(num1, num2, num3, num4, num5)
 	// fmt.Println(result)
 
-	if i, err := strconv.ParseInt("1111111111111111", 2, 32); err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(i)
-	}
 }
