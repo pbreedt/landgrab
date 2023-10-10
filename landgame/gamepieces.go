@@ -48,11 +48,11 @@ func (lps LandPiecesSlice) PrintN(n int) string {
 	return ToBinaryGrid(nums...)
 }
 
-// func (lp LandPiece) String() string {
-// 	s := ""
+func (lp LandPiece) String() string {
+	s := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%016b", lp.Value), "0", "."), "1", "#")
 
-// 	return s
-// }
+	return s
+}
 
 func ToBinaryGrid(nums ...uint16) string {
 	line1, line2, line3, line4 := "", "", "", ""

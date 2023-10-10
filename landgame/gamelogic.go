@@ -44,27 +44,79 @@ func (g *Gameboard) Play() {
 	playerTurn := 0
 
 	for {
+		keepTurn := false
+
 		fmt.Println(g)
 
 		fmt.Println(LandPieces.PrintN(5))
 
 		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? ", g.players[playerTurn].Name))
+		// move := "P"
 		// fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
 
 		//do move:
 		switch strings.ToUpper(move) {
-		case "Q":
+		case "Q": // Quit
 			return
+		case "P": // Place a piece
+			placeXY := Coordinate{X: 0, Y: 0}
+			keepPlacing, gb := g.PlacePiece(&g.players[playerTurn], LandPieces[0], placeXY)
+			for keepPlacing {
+				move2, _ := input.ReadString("[P]lace | Move [R]ight | Move [L]eft | Move [U]p | Move [D]own") // TODO: add Up & Down
+				switch strings.ToUpper(move2) {
+				case "P":
+					g = &gb
+					keepPlacing = false
+				case "R":
+					placeXY.X++
+				case "L":
+					placeXY.X--
+				case "U":
+					placeXY.Y--
+				case "D":
+					placeXY.Y++
+				}
+				if keepPlacing {
+					keepPlacing, gb = g.PlacePiece(&g.players[playerTurn], LandPieces[0], placeXY)
+				}
+			}
 		default:
+			keepTurn = true
 		}
 
-		//next turn:
-		playerTurn++
-		if playerTurn >= len(g.players) {
-			playerTurn = 0
+		if !keepTurn {
+			//next turn:
+			playerTurn++
+			if playerTurn >= len(g.players) {
+				playerTurn = 0
+			}
 		}
 	}
 
+}
+
+func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, Gameboard) {
+	binStr := lp.String()
+
+	if c.Y < 0 || c.Y > 8 {
+		return false, g
+	}
+	if c.X < 0 || c.X > 8 {
+		return false, g
+	}
+
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			sidx := x + (y * 4)
+			if binStr[sidx:sidx+1] == "#" {
+				g.board[c.Y+y][c.X+x] = Block{Marker: "#", Belongs_to: p}
+			}
+		}
+	}
+
+	fmt.Println(g)
+
+	return true, g // if fits
 }
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {
