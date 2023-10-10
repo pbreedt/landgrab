@@ -25,8 +25,8 @@ func NewGameboard() Gameboard {
 
 func (gb Gameboard) String() string {
 	bsh := ""
-	for _, p := range gb.players {
-		bsh += ColorString(fmt.Sprintf("Player %s in %s\n", p.Name, p.Color), p.Color)
+	for i, p := range gb.players {
+		bsh += fmt.Sprintf("Player %d: %v\n", i+1, p)
 	}
 	bs := ""
 	for y := 0; y < boardsize; y++ {
@@ -51,7 +51,7 @@ func (b Block) String() string {
 }
 
 var (
-	OpenBlock   Block = Block{Marker: ""}
+	OpenBlock   Block = Block{}
 	RobBlock    Block = Block{Marker: " R "}
 	AttackBlock Block = Block{Marker: " A "}
 )
@@ -69,8 +69,8 @@ const (
 	White
 )
 
-func (e Color) String() string {
-	return [...]string{"Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"}[e]
+func (c Color) String() string {
+	return [...]string{"Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"}[c]
 }
 
 func ColorString(s string, c Color) string {
@@ -94,11 +94,26 @@ func ColorString(s string, c Color) string {
 	return s
 }
 
+type Card int
+
+const (
+	SwapCard Card = iota
+	RobCard
+	AttackCard
+)
+
+func (c Card) String() string {
+	return [...]string{"Swap", "Rob", "Attack"}[c]
+}
+
 type Player struct {
-	Name  string
-	Color Color
+	Name        string
+	Color       Color
+	SwapCards   []Card
+	RobCards    []Card
+	AttackCards []Card
 }
 
 func (p Player) String() string {
-	return ColorString(p.Name, p.Color)
+	return ColorString(fmt.Sprintf("%s Swap Cards:%d, Rob Cards:%d, Attack Cards:%d", p.Name, len(p.SwapCards), len(p.RobCards), len(p.AttackCards)), p.Color)
 }

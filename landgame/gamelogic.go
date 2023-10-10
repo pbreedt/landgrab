@@ -10,6 +10,9 @@ func (g *Gameboard) Initialize(players ...Player) {
 	areas := StakePlayerAreas(len(players))
 
 	for i := 0; i < len(players); i++ {
+		// assign 1 Swap card to eack player
+		g.players[i].SwapCards = append(g.players[i].SwapCards, SwapCard)
+
 		// assign 1 Home block in player area
 		x, y := g.GetRandomPosition(areas[i])
 		g.board[y][x] = Block{Marker: " H ", Belongs_to: &players[i]}
@@ -30,6 +33,12 @@ func (g *Gameboard) Initialize(players ...Player) {
 	// for i, a := range areas {
 	// 	g.MarkArea(a, strconv.Itoa(i))
 	// }
+}
+
+func (g *Gameboard) Play() {
+	for {
+
+	}
 }
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {

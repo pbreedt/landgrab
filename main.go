@@ -40,5 +40,20 @@ func main() {
 
 	gameboard.Initialize(players...)
 
-	fmt.Println(gameboard)
+	// fmt.Println(gameboard)
+
+	// num1 := uint16(rand.Intn(math.MaxUint16))
+	// num2 := uint16(rand.Intn(math.MaxUint16))
+	// num3 := uint16(rand.Intn(math.MaxUint16))
+	// num4 := uint16(rand.Intn(math.MaxUint16))
+	// num5 := uint16(rand.Intn(math.MaxUint16))
+
+	// result := landgame.ToBinaryGrid(num1, num2, num3, num4, num5)
+	// fmt.Println(result)
+
+	if i, err := strconv.ParseInt("1111111111111111", 2, 32); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(i)
+	}
 }
