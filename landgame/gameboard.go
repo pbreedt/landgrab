@@ -31,7 +31,8 @@ func (gb Gameboard) String() string {
 	bs := ""
 	for y := 0; y < boardsize; y++ {
 		for x := 0; x < boardsize; x++ {
-			bs += fmt.Sprintf("[%+v](%2d,%2d)", gb.board[y][x], x, y)
+			// bs += fmt.Sprintf("[%+v](%2d,%2d)", gb.board[y][x], x, y)
+			bs += fmt.Sprintf("[%+v]", gb.board[y][x])
 		}
 		bs += "\n"
 	}
@@ -45,15 +46,16 @@ type Block struct {
 
 func (b Block) String() string {
 	if b.Belongs_to != nil {
-		return ColorString(fmt.Sprintf("%3s", b.Marker), b.Belongs_to.Color)
+		return ColorString(fmt.Sprintf("%1s", b.Marker), b.Belongs_to.Color)
 	}
-	return fmt.Sprintf("%3s", b.Marker)
+	return fmt.Sprintf("%1s", b.Marker)
 }
 
 var (
 	OpenBlock   Block = Block{}
-	RobBlock    Block = Block{Marker: " R "}
-	AttackBlock Block = Block{Marker: " A "}
+	RobBlock    Block = Block{Marker: "R"}
+	AttackBlock Block = Block{Marker: "A"}
+	HomeBlock   Block = Block{Marker: "H"}
 )
 
 type Color int

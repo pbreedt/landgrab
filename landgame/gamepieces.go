@@ -2,33 +2,63 @@ package landgame
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"strconv"
 	"strings"
 )
 
-var LandPieces [100]LandPiece
+type LandPiecesSlice []LandPiece
+
+var LandPieces LandPiecesSlice
 
 type LandPiece struct {
 	// 0000
 	// 0010
 	// 0110
 	// 0100
-	Bits    uint16 // 0000_0000_0000_0000
-	placedX int
-	placedY int
+	Value  uint16 // 0000_0010_0110_0100
+	placed *Coordinate
 }
 
-func (lp LandPiece) String() string {
-	s := ""
-
-	return s
+func RandomizeLandPieces(num int) {
+	for i := 0; i < num; i++ {
+		n := uint16(rand.Intn(math.MaxUint16))
+		if !LandPieces.contains(n) {
+			LandPieces = append(LandPieces, LandPiece{Value: n})
+		}
+	}
 }
+
+func (s LandPiecesSlice) contains(num uint16) bool {
+	for _, lp := range s {
+		if lp.Value == num {
+			return true
+		}
+	}
+	return false
+}
+
+func (lps LandPiecesSlice) PrintN(n int) string {
+	var nums []uint16
+	for i := 0; i < n; i++ {
+		nums = append(nums, lps[i].Value)
+	}
+
+	return ToBinaryGrid(nums...)
+}
+
+// func (lp LandPiece) String() string {
+// 	s := ""
+
+// 	return s
+// }
 
 func ToBinaryGrid(nums ...uint16) string {
 	line1, line2, line3, line4 := "", "", "", ""
 	for _, num := range nums {
 		binaryStr := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%016b", num), "0", "."), "1", "#")
-		fmt.Println("ToBinaryGrid before:", binaryStr)
+		// fmt.Println("ToBinaryGrid before:", binaryStr)
 
 		line1 += binaryStr[0:4] + " | "
 		line2 += binaryStr[4:8] + " | "
@@ -46,38 +76,60 @@ func ToBinaryGrid(nums ...uint16) string {
 // 0010			1100
 // 0110   ==>  	0110
 // 1100			0000
-func RotateClockwise(num uint16) string {
+func RotateClockwise(num uint16) (uint16, string) {
 	binaryStr := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%016b", num), "0", "."), "1", "#")
-	fmt.Println("RotateClockwise before:", binaryStr)
+	binaryStrResult := ""
+
+	// fmt.Println("RotateClockwise before:", binaryStr)
+
 	grid := make([]string, 4)
 	for i := 0; i < 4; i++ {
 		// fmt.Printf("[%d]: [%d:%d] [%d:%d] [%d:%d] [%d:%d]\n", i, i+12, i+12+1, i+8, i+8+1, i+4, i+4+1, i, i+1)
+		binaryStrResult += binaryStr[i+12:i+12+1] + binaryStr[i+8:i+8+1] + binaryStr[i+4:i+4+1] + binaryStr[i:i+1]
 		grid[i] = binaryStr[i+12:i+12+1] + binaryStr[i+8:i+8+1] + binaryStr[i+4:i+4+1] + binaryStr[i:i+1] + " | "
 	}
 
 	// Join the rows of the grid with spaces
 	result := strings.Join(grid, "\n") + "\n"
+	// fmt.Println("RotateClockwise after:", result)
 
-	return result
+	binaryStrResult = strings.ReplaceAll(strings.ReplaceAll(binaryStrResult, ".", "0"), "#", "1")
+	intVal, err := BinaryStringToInt(binaryStrResult)
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+	}
+
+	return intVal, result
 }
 
 // 0000			0000
 // 0010			0110
 // 0110   ==>  	0011
 // 1100			0001
-func RotateAntiClockwise(num uint16) string {
+func RotateAntiClockwise(num uint16) (uint16, string) {
 	binaryStr := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%016b", num), "0", "."), "1", "#")
-	fmt.Println("RotateClockwise before:", binaryStr)
+	binaryStrResult := ""
+
+	// fmt.Println("RotateAntiClockwise before:", binaryStr)
+
 	grid := make([]string, 4)
 	for i := 3; i >= 0; i-- {
 		// fmt.Printf("[%d]: [%d:%d] [%d:%d] [%d:%d] [%d:%d]\n", i, i+12, i+12+1, i+8, i+8+1, i+4, i+4+1, i, i+1)
+		binaryStrResult += binaryStr[i:i+1] + binaryStr[i+4:i+4+1] + binaryStr[i+8:i+8+1] + binaryStr[i+12:i+12+1]
 		grid[3-i] = binaryStr[i:i+1] + binaryStr[i+4:i+4+1] + binaryStr[i+8:i+8+1] + binaryStr[i+12:i+12+1] + " | "
 	}
 
 	// Join the rows of the grid with spaces
 	result := strings.Join(grid, "\n") + "\n"
+	// fmt.Println("RotateAntiClockwise after:", result)
 
-	return result
+	binaryStrResult = strings.ReplaceAll(strings.ReplaceAll(binaryStrResult, ".", "0"), "#", "1")
+	intVal, err := BinaryStringToInt(binaryStrResult)
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+	}
+
+	return intVal, result
 }
 
 //TODO: implement FlipH & FlipV

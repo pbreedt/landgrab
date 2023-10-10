@@ -19,7 +19,7 @@ func (g *Gameboard) Initialize(players ...Player) {
 
 		// assign 1 Home block in player area
 		x, y := g.GetRandomPosition(areas[i])
-		g.board[y][x] = Block{Marker: " H ", Belongs_to: &players[i]}
+		g.board[y][x] = Block{Marker: HomeBlock.Marker, Belongs_to: &players[i]}
 		// log.Default().Printf("done with home for %s", players[i].Name)
 
 		// assign 1 Rob block in player area
@@ -33,6 +33,7 @@ func (g *Gameboard) Initialize(players ...Player) {
 		// log.Default().Printf("done with attack for %s", players[i].Name)
 	}
 
+	RandomizeLandPieces(100)
 	// visualize player areas
 	// for i, a := range areas {
 	// 	g.MarkArea(a, strconv.Itoa(i))
@@ -44,8 +45,11 @@ func (g *Gameboard) Play() {
 
 	for {
 		fmt.Println(g)
+
+		fmt.Println(LandPieces.PrintN(5))
+
 		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? ", g.players[playerTurn].Name))
-		fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
+		// fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
 
 		//do move:
 		switch strings.ToUpper(move) {
@@ -65,8 +69,8 @@ func (g *Gameboard) Play() {
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {
 	for {
-		x := rand.Intn(area.endX-area.startX) + area.startX
-		y := rand.Intn(area.endY-area.startY) + area.startY
+		x := rand.Intn(area.end.X-area.start.X) + area.start.X
+		y := rand.Intn(area.end.Y-area.start.Y) + area.start.Y
 
 		if g.board[y][x].Marker == OpenBlock.Marker {
 			return x, y
@@ -76,9 +80,12 @@ func (g Gameboard) GetRandomPosition(area Area) (int, int) {
 	}
 }
 
+type Coordinate struct {
+	X, Y int
+}
 type Area struct {
-	startX, endX int
-	startY, endY int
+	start Coordinate
+	end   Coordinate
 }
 
 // StakePlayerAreas ensures each player has equal area
@@ -92,64 +99,64 @@ func StakePlayerAreas(players int) []Area {
 	// 2 players: 1) 0,0 -> 11,5  2) 0,6 -> 11,11
 	if players == 2 {
 		// top half
-		areas[0].startX = 0
-		areas[0].startY = 0
-		areas[0].endX = boardsize - 1
-		areas[0].endY = (boardsize / 2) - 1
+		areas[0].start.X = 0
+		areas[0].start.Y = 0
+		areas[0].end.X = boardsize - 1
+		areas[0].end.Y = (boardsize / 2) - 1
 
 		// bottom half
-		areas[1].startX = 0
-		areas[1].startY = (boardsize / 2)
-		areas[1].endX = boardsize - 1
-		areas[1].endY = boardsize - 1
+		areas[1].start.X = 0
+		areas[1].start.Y = (boardsize / 2)
+		areas[1].end.X = boardsize - 1
+		areas[1].end.Y = boardsize - 1
 	}
 
 	// 3 players: 1) 0,0 -> 5,5  2) 0,6 -> 5,11  3) 6,3 -> 11,8
 	if players == 3 {
 		// top left quadrant
-		areas[0].startX = 0
-		areas[0].startY = 0
-		areas[0].endX = (boardsize / 2) - 1
-		areas[0].endY = (boardsize / 2) - 1
+		areas[0].start.X = 0
+		areas[0].start.Y = 0
+		areas[0].end.X = (boardsize / 2) - 1
+		areas[0].end.Y = (boardsize / 2) - 1
 
 		// bottom left quadrant
-		areas[1].startX = 0
-		areas[1].startY = (boardsize / 2)
-		areas[1].endX = (boardsize / 2) - 1
-		areas[1].endY = boardsize - 1
+		areas[1].start.X = 0
+		areas[1].start.Y = (boardsize / 2)
+		areas[1].end.X = (boardsize / 2) - 1
+		areas[1].end.Y = boardsize - 1
 
 		// top right quadrant, moved down by half a quadrant
-		areas[2].startX = (boardsize / 2)
-		areas[2].startY = (boardsize / 4)
-		areas[2].endX = boardsize - 1
-		areas[2].endY = boardsize - (boardsize / 4) - 1
+		areas[2].start.X = (boardsize / 2)
+		areas[2].start.Y = (boardsize / 4)
+		areas[2].end.X = boardsize - 1
+		areas[2].end.Y = boardsize - (boardsize / 4) - 1
 	}
 
 	// 4 players: 1) 0,0 -> 5,5  2) 0,6 -> 5,11  3) 6,0 -> 11,5  4) 6,6 -> 11,11
 	if players == 4 {
 		// top left quadrant
-		areas[0].startX = 0
-		areas[0].startY = 0
-		areas[0].endX = (boardsize / 2) - 1
-		areas[0].endY = (boardsize / 2) - 1
+		areas[0].start.X = 0
+		areas[0].start.Y = 0
+		areas[0].end.X = (boardsize / 2) - 1
+		areas[0].end.Y = (boardsize / 2) - 1
 
 		// bottom left quadrant
-		areas[1].startX = 0
-		areas[1].startY = (boardsize / 2)
-		areas[1].endX = (boardsize / 2) - 1
-		areas[1].endY = boardsize - 1
+		areas[1].start.X = 0
+		areas[1].start.Y = (boardsize / 2)
+		areas[1].end.X = (boardsize / 2) - 1
+		areas[1].end.Y = boardsize - 1
 
 		// top right quadrant
-		areas[2].startX = (boardsize / 2)
-		areas[2].startY = 0
-		areas[2].endX = boardsize - 1
-		areas[2].endY = (boardsize / 2) - 1
+		areas[2].start.X = (boardsize / 2)
+		areas[2].start.Y = 0
+		areas[2].end.X = boardsize - 1
+		areas[2].end.Y = (boardsize / 2) - 1
 
 		// bottom right quadrant
-		areas[3].startX = (boardsize / 2)
-		areas[3].startY = (boardsize / 2)
-		areas[3].endX = boardsize - 1
-		areas[3].endY = boardsize - 1
+		areas[3].start.X = (boardsize / 2)
+		areas[3].start.Y = (boardsize / 2)
+		areas[3].end.X = boardsize - 1
+		areas[3].end.Y = boardsize - 1
 	}
 
 	return areas
@@ -158,8 +165,8 @@ func StakePlayerAreas(players int) []Area {
 func (g *Gameboard) MarkArea(area Area, marker string) {
 	b := Block{Marker: marker}
 
-	for x := area.startX; x <= area.endX; x++ {
-		for y := area.startY; y <= area.endY; y++ {
+	for x := area.start.X; x <= area.end.X; x++ {
+		for y := area.start.Y; y <= area.end.Y; y++ {
 			g.board[y][x] = b
 		}
 	}

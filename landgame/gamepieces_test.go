@@ -14,20 +14,30 @@ func TestToBinaryGrid(t *testing.T) {
 }
 
 func TestRotateClockwise(t *testing.T) {
-	result := RotateClockwise(1234)
-	expect := ".#.. | \n.##. | \n#... | \n.#.. | \n"
+	nval, result := RotateClockwise(1234)
+	expectRes := ".#.. | \n.##. | \n#... | \n.#.. | \n"
+	expectVal := uint16(18052)
 	t.Logf("\n%s", result)
-	if result != expect {
-		t.Errorf("expected:\n%s, got:\n%s", expect, result)
+	if result != expectRes {
+		t.Errorf("expected:\n%s, got:\n%s", expectRes, result)
+	}
+
+	if nval != expectVal {
+		t.Errorf("expected:\n%d, got:\n%d", expectVal, nval)
 	}
 }
 
 func TestRotateAntiClockwise(t *testing.T) {
-	result := RotateAntiClockwise(1234)
-	expect := "..#. | \n...# | \n.##. | \n..#. | \n"
+	nval, result := RotateAntiClockwise(1234)
+	expectRes := "..#. | \n...# | \n.##. | \n..#. | \n"
+	expectVal := uint16(8546)
 	t.Logf("\n%s", result)
-	if result != expect {
-		t.Errorf("expected:\n%s, got:\n%s", expect, result)
+	if result != expectRes {
+		t.Errorf("expected:\n%s, got:\n%s", expectRes, result)
+	}
+
+	if nval != expectVal {
+		t.Errorf("expected:\n%d, got:\n%d", expectVal, nval)
 	}
 }
 
