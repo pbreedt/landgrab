@@ -18,19 +18,19 @@ type LandPiece struct {
 	// 0110
 	// 0100
 	Value  uint16 // 0000_0010_0110_0100
-	placed *Coordinate
+	Placed *Coordinate
 }
 
 func RandomizeLandPieces(num int) {
 	for i := 0; i < num; i++ {
 		n := uint16(rand.Intn(math.MaxUint16))
-		if !LandPieces.contains(n) {
+		if !LandPieces.Contains(n) {
 			LandPieces = append(LandPieces, LandPiece{Value: n})
 		}
 	}
 }
 
-func (s LandPiecesSlice) contains(num uint16) bool {
+func (s LandPiecesSlice) Contains(num uint16) bool {
 	for _, lp := range s {
 		if lp.Value == num {
 			return true

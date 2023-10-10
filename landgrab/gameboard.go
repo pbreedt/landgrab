@@ -9,8 +9,8 @@ import (
 const boardsize int = 12
 
 type Gameboard struct {
-	board   [boardsize][boardsize]Block
-	players []Player
+	Board   [boardsize][boardsize]Block
+	Players []Player
 }
 
 // Intended for initial configuration of gameboard
@@ -25,14 +25,14 @@ func NewGameboard() Gameboard {
 
 func (gb Gameboard) String() string {
 	bsh := ""
-	for i, p := range gb.players {
+	for i, p := range gb.Players {
 		bsh += fmt.Sprintf("Player %d: %v\n", i, p)
 	}
 	bs := ""
 	for y := 0; y < boardsize; y++ {
 		for x := 0; x < boardsize; x++ {
 			// bs += fmt.Sprintf("[%+v](%2d,%2d)", gb.board[y][x], x, y)
-			bs += fmt.Sprintf("[%+v]", gb.board[y][x])
+			bs += fmt.Sprintf("[%+v]", gb.Board[y][x])
 		}
 		bs += "\n"
 	}
