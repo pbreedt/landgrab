@@ -3,19 +3,19 @@ package main
 import (
 	"fmt"
 
-	"github.com/pbreedt/landgame/landgame"
+	"github.com/pbreedt/landgrab/landgrab"
 )
 
 var (
-	Red     = landgame.Player{Name: "Red", Color: landgame.Red}
-	Green   = landgame.Player{Name: "Green", Color: landgame.Green}
-	Yellow  = landgame.Player{Name: "Yellow", Color: landgame.Yellow}
-	Blue    = landgame.Player{Name: "Blue", Color: landgame.Blue}
-	Magenta = landgame.Player{Name: "Magenta", Color: landgame.Magenta}
-	Cyan    = landgame.Player{Name: "Cyan", Color: landgame.Cyan}
-	White   = landgame.Player{Name: "White", Color: landgame.White}
+	Red     = landgrab.Player{Name: "Red", Color: landgrab.Red}
+	Green   = landgrab.Player{Name: "Green", Color: landgrab.Green}
+	Yellow  = landgrab.Player{Name: "Yellow", Color: landgrab.Yellow}
+	Blue    = landgrab.Player{Name: "Blue", Color: landgrab.Blue}
+	Magenta = landgrab.Player{Name: "Magenta", Color: landgrab.Magenta}
+	Cyan    = landgrab.Player{Name: "Cyan", Color: landgrab.Cyan}
+	White   = landgrab.Player{Name: "White", Color: landgrab.White}
 
-	PlayerColors [7]landgame.Player = [7]landgame.Player{Red, Green, Yellow, Blue, Magenta, Cyan, White}
+	PlayerColors [7]landgrab.Player = [7]landgrab.Player{Red, Green, Yellow, Blue, Magenta, Cyan, White}
 )
 
 func main() {
@@ -26,8 +26,8 @@ func main() {
 		return
 	}
 
-	var players []landgame.Player
-	gameboard := landgame.NewGameboard()
+	var players []landgrab.Player
+	gameboard := landgrab.NewGameboard()
 
 	for i := 0; i < num_players; i++ {
 		// name, _ := input.ReadString(fmt.Sprintf("Name for player %d? ", i))
@@ -46,7 +46,7 @@ func main() {
 	// num4 := uint16(rand.Intn(math.MaxUint16))
 	// num5 := uint16(rand.Intn(math.MaxUint16))
 
-	// result := landgame.ToBinaryGrid(num1, num2, num3, num4, num5)
+	// result := landgrab.ToBinaryGrid(num1, num2, num3, num4, num5)
 	// fmt.Println(result)
 
 }

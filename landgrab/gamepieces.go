@@ -1,4 +1,4 @@
-package landgame
+package landgrab
 
 import (
 	"fmt"

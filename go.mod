@@ -1,4 +1,4 @@
-module github.com/pbreedt/landgame
+module github.com/pbreedt/landgrab
 
 go 1.21.1
 
