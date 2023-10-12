@@ -54,6 +54,27 @@ func (lp LandPiece) String() string {
 	return s
 }
 
+func (lp LandPiece) TopRowEmpty() bool {
+	binaryStr := fmt.Sprintf("%016b", lp.Value)
+
+	return binaryStr[0:4] == "0000"
+}
+func (lp LandPiece) BottomRowEmpty() bool {
+	binaryStr := fmt.Sprintf("%016b", lp.Value)
+
+	return binaryStr[12:16] == "0000"
+}
+func (lp LandPiece) LeftColEmpty() bool {
+	binaryStr := fmt.Sprintf("%016b", lp.Value)
+	lc := binaryStr[0:1] + binaryStr[4:5] + binaryStr[8:9] + binaryStr[12:13]
+	return lc == "0000"
+}
+func (lp LandPiece) RightColEmpty() bool {
+	binaryStr := fmt.Sprintf("%016b", lp.Value)
+	rc := binaryStr[3:4] + binaryStr[7:8] + binaryStr[11:12] + binaryStr[15:16]
+	return rc == "0000"
+}
+
 func ToBinaryGrid(nums ...uint16) string {
 	line1, line2, line3, line4 := "", "", "", ""
 	for _, num := range nums {

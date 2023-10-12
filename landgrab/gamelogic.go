@@ -50,7 +50,7 @@ func (g *Gameboard) Play() {
 
 		fmt.Println(LandPieces.PrintN(5))
 
-		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? ", g.Players[playerTurn].Name))
+		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? [Q]uit | [P]lace a piece ", g.Players[playerTurn].Name))
 		// move := "P"
 		// fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
 
@@ -60,24 +60,47 @@ func (g *Gameboard) Play() {
 			return
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
-			keepPlacing, gb := g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+			keepPlacing := true
+			itFits, gb := g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+			var moves []string
 			for keepPlacing {
-				move2, _ := input.ReadString("[P]lace | Move [R]ight | Move [L]eft | Move [U]p | Move [D]own") // TODO: add Up & Down
-				switch strings.ToUpper(move2) {
+				if itFits {
+					moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
+				}
+				placeMove, _ := input.ReadString(strings.Join(moves, " | ") + " ")
+
+				switch strings.ToUpper(placeMove) {
 				case "P":
 					g = &gb
 					keepPlacing = false
 				case "R":
 					placeXY.X++
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					if !itFits {
+						placeXY.X--
+						moves = []string{"[P]lace", "Move [L]eft", "Move [U]p", "Move [D]own"}
+					}
 				case "L":
 					placeXY.X--
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					if !itFits {
+						placeXY.X++
+						moves = []string{"[P]lace", "Move [R]ight", "Move [U]p", "Move [D]own"}
+					}
 				case "U":
 					placeXY.Y--
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					if !itFits {
+						placeXY.Y++
+						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [D]own"}
+					}
 				case "D":
 					placeXY.Y++
-				}
-				if keepPlacing {
-					keepPlacing, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					if !itFits {
+						placeXY.Y--
+						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
+					}
 				}
 			}
 		default:
@@ -95,20 +118,21 @@ func (g *Gameboard) Play() {
 
 }
 
+// PlacePiece checks if a LandPiece fits on Gameboard at provided Coordinate
+// Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
+// Returns confirmation if the piece could fit & the new Gameboard
 func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, Gameboard) {
 	binStr := lp.String()
 
-	if c.Y < 0 || c.Y > 8 {
-		return false, g
-	}
-	if c.X < 0 || c.X > 8 {
+	// TODO: replace below with g.LandPieceFits()
+	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
 		return false, g
 	}
 
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
-			if binStr[sidx:sidx+1] == "#" {
+			if binStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
 				g.Board[c.Y+y][c.X+x] = Block{Marker: "#", Belongs_to: p}
 			}
 		}
@@ -116,7 +140,7 @@ func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, Game
 
 	fmt.Println(g)
 
-	return true, g // if fits
+	return true, g // it fits
 }
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {
