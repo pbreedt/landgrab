@@ -42,9 +42,13 @@ func (gb Gameboard) String() string {
 type Block struct {
 	Marker     string
 	Belongs_to *Player
+	Invalid    bool
 }
 
 func (b Block) String() string {
+	if b.Invalid {
+		return ColorString(fmt.Sprintf("%1s", b.Marker), Red)
+	}
 	if b.Belongs_to != nil {
 		return ColorString(fmt.Sprintf("%1s", b.Marker), b.Belongs_to.Color)
 	}
@@ -52,10 +56,10 @@ func (b Block) String() string {
 }
 
 var (
-	OpenBlock   Block = Block{}
-	RobBlock    Block = Block{Marker: "R"}
-	AttackBlock Block = Block{Marker: "A"}
-	HomeBlock   Block = Block{Marker: "H"}
+	OpenBlock  Block = Block{}
+	StealBlock Block = Block{Marker: "S"}
+	RockBlock  Block = Block{Marker: "R"}
+	HomeBlock  Block = Block{Marker: "H"}
 )
 
 type Color int
@@ -100,8 +104,8 @@ type Card int
 
 const (
 	SwapCard Card = iota
-	RobCard
-	AttackCard
+	StealCard
+	RockCard
 )
 
 func (c Card) String() string {
@@ -109,13 +113,13 @@ func (c Card) String() string {
 }
 
 type Player struct {
-	Name        string
-	Color       Color
-	SwapCards   []Card
-	RobCards    []Card
-	AttackCards []Card
+	Name       string
+	Color      Color
+	SwapCards  []Card
+	StealCards []Card
+	RockCards  []Card
 }
 
 func (p Player) String() string {
-	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Rob Cards:%d, Attack Cards:%d", p.Name, len(p.SwapCards), len(p.RobCards), len(p.AttackCards)), p.Color)
+	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Steal Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.StealCards), len(p.RockCards)), p.Color)
 }

@@ -24,12 +24,12 @@ func (g *Gameboard) Initialize(players ...Player) {
 
 		// assign 1 Rob block in player area
 		x, y = g.GetRandomPosition(areas[i])
-		g.Board[y][x] = RobBlock
+		g.Board[y][x] = StealBlock
 		// log.Default().Printf("done with rob for %s", players[i].Name)
 
 		// assign 1 Attack block in player area
 		x, y = g.GetRandomPosition(areas[i])
-		g.Board[y][x] = AttackBlock
+		g.Board[y][x] = RockBlock
 		// log.Default().Printf("done with attack for %s", players[i].Name)
 	}
 
@@ -63,55 +63,67 @@ func (g *Gameboard) Play() {
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
 			keepPlacing := true
-			itFits, gb := g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+			itFits, valid, gb := g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 			var moves []string
 			for keepPlacing {
 				if itFits {
-					moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
+					moves = []string{"Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
 				}
-				rotateMoves := "Rotate [C]lockwise | Rotate [A]nticlockwise "
-				placeMove, _ := input.ReadString(strings.Join(moves, " | ") + rotateMoves)
+				moves = append(moves, "Rotate [C]lockwise", "Rotate [A]nticlockwise")
+				if valid {
+					moves = append(moves, "[P]lace piece")
+				}
+				// rotateMoves := "Rotate [C]lockwise | Rotate [A]nticlockwise "
+				placeMove, _ := input.ReadString(strings.Join(moves, " | "))
 
 				switch strings.ToUpper(placeMove) {
-				case "P":
+				case "P": // Place
 					g = &gb
 					// placedPos := placeXY might require new var since we use pointer below
 					curLandPiece.Placed = &placeXY
 					log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.Placed)
 					keepPlacing = false
-				case "R":
+				case "R": // Right
 					placeXY.X++
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.X--
 						moves = []string{"[P]lace", "Move [L]eft", "Move [U]p", "Move [D]own"}
 					}
-				case "L":
+				case "L": // Left
 					placeXY.X--
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.X++
 						moves = []string{"[P]lace", "Move [R]ight", "Move [U]p", "Move [D]own"}
 					}
-				case "U":
+				case "U": // Up
 					placeXY.Y--
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.Y++
 						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [D]own"}
 					}
-				case "D":
+				case "D": // Down
 					placeXY.Y++
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.Y--
 						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
 					}
-				case "C":
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+				case "C": // rotate Clockwise
+					curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
-						placeXY.Y--
-						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
+						//TODO: figure out what did not fit
+						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
+					}
+				case "A": // rotate AntiClockwise
+					curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
+					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					if !itFits {
+						//TODO: figure out what did not fit
+						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
 					}
 				}
 			}
@@ -132,27 +144,38 @@ func (g *Gameboard) Play() {
 
 // PlacePiece checks if a LandPiece fits on Gameboard at provided Coordinate
 // Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
-// Returns confirmation if the piece could fit & the new Gameboard
-func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, Gameboard) {
+// Returns confirmation if the piece could fit, if board in in valid state & the new Gameboard
+func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
 	binStr := lp.String()
+	boardValid := true
 
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
 	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
-		return false, g
+		return false, false, g
 	}
 
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
 			if binStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
-				g.Board[c.Y+y][c.X+x] = Block{Marker: "#", Belongs_to: p}
+				block := g.Board[c.Y+y][c.X+x]
+				marker := block.Marker
+				if block.Belongs_to == nil || (block.Belongs_to.Name == p.Name) {
+					if strings.Trim(marker, " ") == "" {
+						marker = "#"
+					}
+					g.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p}
+				} else {
+					g.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p, Invalid: true}
+					boardValid = false
+				}
 			}
 		}
 	}
 
 	fmt.Println(g)
 
-	return true, g // it fits
+	return true, boardValid, g // it fits
 }
 
 func (g Gameboard) GetRandomPosition(area Area) (int, int) {
