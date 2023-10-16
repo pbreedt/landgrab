@@ -48,7 +48,9 @@ func (g *Gameboard) Play() {
 
 		fmt.Println(g)
 
-		fmt.Println(LandPieces.PrintN(5))
+		firstPieceIndex := LandPieces.PrintUnplacedN(5)
+		log.Default().Println("Place piece index", firstPieceIndex)
+		curLandPiece := &LandPieces[firstPieceIndex]
 
 		move, _ := input.ReadString(fmt.Sprintf("Move for player %s? [Q]uit | [P]lace a piece ", g.Players[playerTurn].Name))
 		// move := "P"
@@ -61,42 +63,52 @@ func (g *Gameboard) Play() {
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
 			keepPlacing := true
-			itFits, gb := g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+			itFits, gb := g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 			var moves []string
 			for keepPlacing {
 				if itFits {
 					moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
 				}
-				placeMove, _ := input.ReadString(strings.Join(moves, " | ") + " ")
+				rotateMoves := "Rotate [C]lockwise | Rotate [A]nticlockwise "
+				placeMove, _ := input.ReadString(strings.Join(moves, " | ") + rotateMoves)
 
 				switch strings.ToUpper(placeMove) {
 				case "P":
 					g = &gb
+					// placedPos := placeXY might require new var since we use pointer below
+					curLandPiece.Placed = &placeXY
+					log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.Placed)
 					keepPlacing = false
 				case "R":
 					placeXY.X++
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.X--
 						moves = []string{"[P]lace", "Move [L]eft", "Move [U]p", "Move [D]own"}
 					}
 				case "L":
 					placeXY.X--
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.X++
 						moves = []string{"[P]lace", "Move [R]ight", "Move [U]p", "Move [D]own"}
 					}
 				case "U":
 					placeXY.Y--
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.Y++
 						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [D]own"}
 					}
 				case "D":
 					placeXY.Y++
-					itFits, gb = g.PlacePiece(&g.Players[playerTurn], LandPieces[0], placeXY)
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+					if !itFits {
+						placeXY.Y--
+						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
+					}
+				case "C":
+					itFits, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
 					if !itFits {
 						placeXY.Y--
 						moves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
@@ -124,7 +136,7 @@ func (g *Gameboard) Play() {
 func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, Gameboard) {
 	binStr := lp.String()
 
-	// TODO: replace below with g.LandPieceFits()
+	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
 	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
 		return false, g
 	}

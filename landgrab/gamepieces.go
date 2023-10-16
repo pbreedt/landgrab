@@ -2,6 +2,7 @@ package landgrab
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"strconv"
@@ -39,13 +40,23 @@ func (s LandPiecesSlice) Contains(num uint16) bool {
 	return false
 }
 
-func (lps LandPiecesSlice) PrintN(n int) string {
+func (lps LandPiecesSlice) PrintUnplacedN(n int) int {
 	var nums []uint16
-	for i := 0; i < n; i++ {
-		nums = append(nums, lps[i].Value)
+	firstPieceIdx := -1
+
+	for i := 0; len(nums) < n && i < len(LandPieces); i++ {
+		log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].Placed)
+		if lps[i].Placed == nil {
+			if firstPieceIdx < 0 {
+				firstPieceIdx = i
+			}
+			nums = append(nums, lps[i].Value)
+		}
 	}
 
-	return ToBinaryGrid(nums...)
+	fmt.Println(ToBinaryGrid(nums...))
+
+	return firstPieceIdx
 }
 
 func (lp LandPiece) String() string {
