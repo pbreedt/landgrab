@@ -5,8 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"strings"
-
-	"github.com/pbreedt/stdio/input"
 )
 
 func (g *Gameboard) Initialize(players ...Player) {
@@ -49,13 +47,22 @@ func (g *Gameboard) Play() {
 		fmt.Println(g)
 
 		firstPieceIndex := LandPieces.PrintUnplacedN(5)
-		log.Default().Println("Place piece index", firstPieceIndex)
 		curLandPiece := &LandPieces[firstPieceIndex]
-		availableMoves := []string{"[Q]uit", "[P]lace a piece"}
-		availableMoves = append(availableMoves, GetCardMoves(g.Players[playerTurn])...)
-		move, _ := input.ReadString(strings.Join(availableMoves, " | ") + "\n" + fmt.Sprintf("Move for player %s? ", g.Players[playerTurn].Name))
+		mainMenu := Menu{Category: "Action", Options: []Option{
+			{Display: "[P]lace a piece", ActionKey: "P"},
+			{Display: "[Q]uit", ActionKey: "Q"},
+		}}
+		cardMenu := GetCardMenu(g.Players[playerTurn])
+		move := GetPlayerMove(g.Players[playerTurn], mainMenu, cardMenu)
+
+		// TESTING
 		// move := "P"
 		// fmt.Printf("Move for player %s: %s", g.players[playerTurn].Name, move)
+		if !IsValidMove(move, mainMenu, cardMenu) {
+			log.Default().Printf("Invalid option: %s\n", move)
+			keepTurn = true
+			continue
+		}
 
 		//do move:
 		switch strings.ToUpper(move) {
@@ -65,68 +72,72 @@ func (g *Gameboard) Play() {
 			placeXY := Coordinate{X: 0, Y: 0}
 			keepPlacing := true
 			itFits, valid, gb := g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+			var moveMenu Menu
 
-			var placeMoves []string
 			for keepPlacing {
 				fmt.Println(gb)
 				if itFits {
-					placeMoves = []string{"Move [L]eft", "Move [R]ight", "Move [U]p", "Move [D]own"}
+					moveMenu = GetCompleteMoveMenu()
 				}
-				placeMoves = append(placeMoves, "Rotate [C]lockwise", "Rotate [A]nticlockwise")
-				if valid {
-					placeMoves = append(placeMoves, "[P]lace piece")
+				rotateMenu := Menu{Category: "Rotate piece", Options: []Option{
+					{Display: "[C]lockwise", ActionKey: "C"},
+					{Display: "[A]nti-clockwise", ActionKey: "A"},
+				}}
+				if !valid {
+					moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
 				}
-				placeMove, _ := input.ReadString(strings.Join(placeMoves, " | ") + "\n" + fmt.Sprintf("Move for player %s? ", g.Players[playerTurn].Name))
-
-				switch strings.ToUpper(placeMove) {
-				case "P": // Place
-					g = &gb
-					curLandPiece.PlacedAt = &placeXY
-					log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
-					keepPlacing = false
-					g.CheckCards()
-				case "R": // Right
-					placeXY.X++
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
-						placeXY.X--
-						placeMoves = []string{"[P]lace", "Move [L]eft", "Move [U]p", "Move [D]own"}
-					}
-				case "L": // Left
-					placeXY.X--
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
+				pieceMove := GetPlayerMove(g.Players[playerTurn], moveMenu, rotateMenu)
+				if IsValidMove(pieceMove, moveMenu, rotateMenu) {
+					switch strings.ToUpper(pieceMove) {
+					case "P": // Place
+						g = &gb
+						curLandPiece.PlacedAt = &placeXY
+						log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
+						keepPlacing = false
+						g.CheckCards()
+					case "R": // Right
 						placeXY.X++
-						placeMoves = []string{"[P]lace", "Move [R]ight", "Move [U]p", "Move [D]own"}
-					}
-				case "U": // Up
-					placeXY.Y--
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
-						placeXY.Y++
-						placeMoves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [D]own"}
-					}
-				case "D": // Down
-					placeXY.Y++
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						if !itFits {
+							placeXY.X--
+							moveMenu.RemoveOption("R")
+						}
+					case "L": // Left
+						placeXY.X--
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						if !itFits {
+							placeXY.X++
+							moveMenu.RemoveOption("L")
+						}
+					case "U": // Up
 						placeXY.Y--
-						placeMoves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p"}
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						if !itFits {
+							placeXY.Y++
+							moveMenu.RemoveOption("U")
+						}
+					case "D": // Down
+						placeXY.Y++
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						if !itFits {
+							placeXY.Y--
+							moveMenu.RemoveOption("D")
+						}
+					case "C": // rotate Clockwise
+						curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						//TODO: can not currently happen, undo rotate when it does
+						// if !itFits {
+						// }
+					case "A": // rotate AntiClockwise
+						curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
+						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						//TODO: can not currently happen, undo rotate when it does
+						// if !itFits {
+						// }
 					}
-				case "C": // rotate Clockwise
-					curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
-						//TODO: figure out what did not fit
-						placeMoves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
-					}
-				case "A": // rotate AntiClockwise
-					curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-					itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
-					if !itFits {
-						//TODO: figure out what did not fit
-						placeMoves = []string{"[P]lace", "Move [R]ight", "Move [L]eft", "Move [U]p", "Move [D]own"}
-					}
+				} else {
+					log.Default().Printf("Invalid option: %s\n", move)
 				}
 			}
 		default:
@@ -180,19 +191,19 @@ func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool
 	return true, boardValid, g // it fits
 }
 
-func GetCardMoves(p Player) []string {
-	moves := []string{}
+func GetCardMenu(p Player) Menu {
+	cardMenu := Menu{Category: "Use a card", Options: []Option{}}
 	if len(p.GrabCards) > 0 {
-		moves = append(moves, "[G]rab land")
+		cardMenu.Options = append(cardMenu.Options, Option{Display: "[G]rab land", ActionKey: "G"})
 	}
 	if len(p.SwapCards) > 0 {
-		moves = append(moves, "[S]wap piece")
+		cardMenu.Options = append(cardMenu.Options, Option{Display: "[S]wap piece", ActionKey: "S"})
 	}
 	if len(p.RockCards) > 0 {
-		moves = append(moves, "Place [R]ock")
+		cardMenu.Options = append(cardMenu.Options, Option{Display: "Place [R]ock", ActionKey: "R"})
 	}
 
-	return moves
+	return cardMenu
 }
 
 func (g *Gameboard) CheckCards() {
@@ -322,4 +333,14 @@ func (g *Gameboard) MarkArea(area Area, marker string) {
 			g.Board[y][x] = b
 		}
 	}
+}
+
+func GetCompleteMoveMenu() Menu {
+	return Menu{Category: "Move piece", Options: []Option{
+		{Display: "[L]eft", ActionKey: "L"},
+		{Display: "[R]ight", ActionKey: "R"},
+		{Display: "[U]p", ActionKey: "U"},
+		{Display: "[D]own", ActionKey: "D"},
+		{Display: "[P]lace piece", ActionKey: "P"},
+	}}
 }
