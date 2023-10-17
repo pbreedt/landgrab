@@ -56,10 +56,12 @@ func (b Block) String() string {
 }
 
 var (
-	OpenBlock  Block = Block{}
-	StealBlock Block = Block{Marker: "S"}
-	RockBlock  Block = Block{Marker: "R"}
-	HomeBlock  Block = Block{Marker: "H"}
+	OpenBlock      Block = Block{Marker: ""}
+	SwapBlock      Block = Block{Marker: "S"}
+	GrabBlock      Block = Block{Marker: "G"}
+	RockBlock      Block = Block{Marker: "R"}
+	HomeBlock      Block = Block{Marker: "H"}
+	LandPieceBlock Block = Block{Marker: "#"}
 )
 
 type Color int
@@ -104,22 +106,22 @@ type Card int
 
 const (
 	SwapCard Card = iota
-	StealCard
+	GrabCard
 	RockCard
 )
 
 func (c Card) String() string {
-	return [...]string{"Swap", "Rob", "Attack"}[c]
+	return [...]string{"Swap", "Grab", "Rock"}[c]
 }
 
 type Player struct {
-	Name       string
-	Color      Color
-	SwapCards  []Card
-	StealCards []Card
-	RockCards  []Card
+	Name      string
+	Color     Color
+	SwapCards []Card
+	GrabCards []Card
+	RockCards []Card
 }
 
 func (p Player) String() string {
-	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Steal Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.StealCards), len(p.RockCards)), p.Color)
+	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Grab Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.GrabCards), len(p.RockCards)), p.Color)
 }

@@ -18,8 +18,8 @@ type LandPiece struct {
 	// 0010
 	// 0110
 	// 0100
-	Value  uint16 // 0000_0010_0110_0100
-	Placed *Coordinate
+	Value    uint16 // 0000_0010_0110_0100
+	PlacedAt *Coordinate
 }
 
 func RandomizeLandPieces(num int) {
@@ -45,8 +45,8 @@ func (lps LandPiecesSlice) PrintUnplacedN(n int) int {
 	firstPieceIdx := -1
 
 	for i := 0; len(nums) < n && i < len(LandPieces); i++ {
-		log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].Placed)
-		if lps[i].Placed == nil {
+		log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].PlacedAt)
+		if lps[i].PlacedAt == nil {
 			if firstPieceIdx < 0 {
 				firstPieceIdx = i
 			}
