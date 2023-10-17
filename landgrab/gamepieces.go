@@ -2,7 +2,6 @@ package landgrab
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"strconv"
@@ -10,8 +9,6 @@ import (
 )
 
 type LandPiecesSlice []LandPiece
-
-var LandPieces LandPiecesSlice
 
 type LandPiece struct {
 	// 0000
@@ -22,13 +19,15 @@ type LandPiece struct {
 	PlacedAt *Coordinate
 }
 
-func RandomizeLandPieces(num int) {
+func RandomizeLandPieces(num int) *LandPiecesSlice {
+	var lps LandPiecesSlice
 	for i := 0; i < num; i++ {
 		n := uint16(rand.Intn(math.MaxUint16))
-		if !LandPieces.Contains(n) {
-			LandPieces = append(LandPieces, LandPiece{Value: n})
+		if !lps.Contains(n) {
+			lps = append(lps, LandPiece{Value: n})
 		}
 	}
+	return &lps
 }
 
 func (s LandPiecesSlice) Contains(num uint16) bool {
@@ -40,12 +39,12 @@ func (s LandPiecesSlice) Contains(num uint16) bool {
 	return false
 }
 
-func (lps LandPiecesSlice) PrintUnplacedN(n int) int {
+func (lps LandPiecesSlice) PrintUnplacedN(startIdx, n int) int {
 	var nums []uint16
 	firstPieceIdx := -1
 
-	for i := 0; len(nums) < n && i < len(LandPieces); i++ {
-		log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].PlacedAt)
+	for i := startIdx; len(nums) < n && i < len(lps); i++ {
+		// log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].PlacedAt)
 		if lps[i].PlacedAt == nil {
 			if firstPieceIdx < 0 {
 				firstPieceIdx = i

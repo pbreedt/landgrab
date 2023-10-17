@@ -9,8 +9,11 @@ import (
 const boardsize int = 12
 
 type Gameboard struct {
-	Board   [boardsize][boardsize]Block
-	Players []Player
+	Board              [boardsize][boardsize]Block
+	Players            []Player
+	LandPieces         *LandPiecesSlice
+	currentPieceIndex  int
+	currentPlayerIndex int
 }
 
 // Intended for initial configuration of gameboard
@@ -21,6 +24,12 @@ func NewGameboard() Gameboard {
 	// 	}
 	// }
 	return gb
+}
+
+func (gb Gameboard) Display() *LandPiece {
+	fmt.Println(gb)
+	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, 5)
+	return &(*gb.LandPieces)[curPcIdx]
 }
 
 func (gb Gameboard) String() string {

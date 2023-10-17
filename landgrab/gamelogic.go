@@ -1,7 +1,6 @@
 package landgrab
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"strings"
@@ -31,7 +30,7 @@ func (g *Gameboard) Initialize(players ...Player) {
 		// log.Default().Printf("done with attack for %s", players[i].Name)
 	}
 
-	RandomizeLandPieces(100)
+	g.LandPieces = RandomizeLandPieces(100)
 	// visualize player areas
 	// for i, a := range areas {
 	// 	g.MarkArea(a, strconv.Itoa(i))
@@ -39,21 +38,16 @@ func (g *Gameboard) Initialize(players ...Player) {
 }
 
 func (g *Gameboard) Play() {
-	playerTurn := 0
-
 	for {
 		keepTurn := false
 
-		fmt.Println(g)
-
-		firstPieceIndex := LandPieces.PrintUnplacedN(5)
-		curLandPiece := &LandPieces[firstPieceIndex]
+		curLandPiece := g.Display()
 		mainMenu := Menu{Category: "Action", Options: []Option{
 			{Display: "[P]lace a piece", ActionKey: "P"},
 			{Display: "[Q]uit", ActionKey: "Q"},
 		}}
-		cardMenu := GetCardMenu(g.Players[playerTurn])
-		move := GetPlayerMove(g.Players[playerTurn], mainMenu, cardMenu)
+		cardMenu := GetCardMenu(g.Players[g.currentPlayerIndex])
+		move := GetPlayerMove(g.Players[g.currentPlayerIndex], mainMenu, cardMenu)
 
 		// TESTING
 		// move := "P"
@@ -71,11 +65,11 @@ func (g *Gameboard) Play() {
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
 			keepPlacing := true
-			itFits, valid, gb := g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+			itFits, valid, gb := g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 			var moveMenu Menu
 
 			for keepPlacing {
-				fmt.Println(gb)
+				gb.Display()
 				if itFits {
 					moveMenu = GetCompleteMoveMenu()
 				}
@@ -86,7 +80,7 @@ func (g *Gameboard) Play() {
 				if !valid {
 					moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
 				}
-				pieceMove := GetPlayerMove(g.Players[playerTurn], moveMenu, rotateMenu)
+				pieceMove := GetPlayerMove(g.Players[g.currentPlayerIndex], moveMenu, rotateMenu)
 				if IsValidMove(pieceMove, moveMenu, rotateMenu) {
 					switch strings.ToUpper(pieceMove) {
 					case "P": // Place
@@ -97,41 +91,41 @@ func (g *Gameboard) Play() {
 						g.CheckCards()
 					case "R": // Right
 						placeXY.X++
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.X--
 							moveMenu.RemoveOption("R")
 						}
 					case "L": // Left
 						placeXY.X--
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.X++
 							moveMenu.RemoveOption("L")
 						}
 					case "U": // Up
 						placeXY.Y--
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.Y++
 							moveMenu.RemoveOption("U")
 						}
 					case "D": // Down
 						placeXY.Y++
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.Y--
 							moveMenu.RemoveOption("D")
 						}
 					case "C": // rotate Clockwise
 						curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						//TODO: can not currently happen, undo rotate when it does
 						// if !itFits {
 						// }
 					case "A": // rotate AntiClockwise
 						curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-						itFits, valid, gb = g.PlacePiece(&g.Players[playerTurn], *curLandPiece, placeXY)
+						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
 						//TODO: can not currently happen, undo rotate when it does
 						// if !itFits {
 						// }
@@ -146,9 +140,9 @@ func (g *Gameboard) Play() {
 
 		if !keepTurn {
 			//next turn:
-			playerTurn++
-			if playerTurn >= len(g.Players) {
-				playerTurn = 0
+			g.currentPlayerIndex++
+			if g.currentPlayerIndex >= len(g.Players) {
+				g.currentPlayerIndex = 0
 			}
 		}
 	}
