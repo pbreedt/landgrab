@@ -26,6 +26,18 @@ func NewGameboard() Gameboard {
 	return gb
 }
 
+func (gb Gameboard) CurrentPlayer() *Player {
+	return &gb.Players[gb.currentPlayerIndex]
+}
+
+func (gb *Gameboard) NextPlayer() *Player {
+	gb.currentPlayerIndex++
+	if gb.currentPlayerIndex >= len(gb.Players) {
+		gb.currentPlayerIndex = 0
+	}
+	return &gb.Players[gb.currentPlayerIndex]
+}
+
 func (gb Gameboard) Display() *LandPiece {
 	fmt.Println(gb)
 	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, 5)

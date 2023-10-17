@@ -6,48 +6,48 @@ import (
 	"strings"
 )
 
-func (g *Gameboard) Initialize(players ...Player) {
-	g.Players = append(g.Players, players...)
+func (gb *Gameboard) Initialize(players ...Player) {
+	gb.Players = append(gb.Players, players...)
 	areas := StakePlayerAreas(len(players))
 
 	for i := 0; i < len(players); i++ {
 		// assign 1 Swap card to eack player
-		g.Players[i].SwapCards = append(g.Players[i].SwapCards, SwapCard)
+		gb.Players[i].SwapCards = append(gb.Players[i].SwapCards, SwapCard)
 
 		// assign 1 Home block in player area
-		x, y := g.GetRandomPosition(areas[i])
-		g.Board[y][x] = Block{Marker: HomeBlock.Marker, Belongs_to: &players[i]}
+		x, y := gb.GetRandomPosition(areas[i])
+		gb.Board[y][x] = Block{Marker: HomeBlock.Marker, Belongs_to: &players[i]}
 		// log.Default().Printf("done with home for %s", players[i].Name)
 
 		// assign 1 Rob block in player area
-		x, y = g.GetRandomPosition(areas[i])
-		g.Board[y][x] = GrabBlock
+		x, y = gb.GetRandomPosition(areas[i])
+		gb.Board[y][x] = GrabBlock
 		// log.Default().Printf("done with rob for %s", players[i].Name)
 
 		// assign 1 Attack block in player area
-		x, y = g.GetRandomPosition(areas[i])
-		g.Board[y][x] = RockBlock
+		x, y = gb.GetRandomPosition(areas[i])
+		gb.Board[y][x] = RockBlock
 		// log.Default().Printf("done with attack for %s", players[i].Name)
 	}
 
-	g.LandPieces = RandomizeLandPieces(100)
+	gb.LandPieces = RandomizeLandPieces(100)
 	// visualize player areas
 	// for i, a := range areas {
 	// 	g.MarkArea(a, strconv.Itoa(i))
 	// }
 }
 
-func (g *Gameboard) Play() {
+func (gb *Gameboard) Play() {
 	for {
 		keepTurn := false
 
-		curLandPiece := g.Display()
+		curLandPiece := gb.Display()
 		mainMenu := Menu{Category: "Action", Options: []Option{
 			{Display: "[P]lace a piece", ActionKey: "P"},
 			{Display: "[Q]uit", ActionKey: "Q"},
 		}}
-		cardMenu := GetCardMenu(g.Players[g.currentPlayerIndex])
-		move := GetPlayerMove(g.Players[g.currentPlayerIndex], mainMenu, cardMenu)
+		cardMenu := GetCardMenu(*gb.CurrentPlayer())
+		move := GetPlayerMove(*gb.CurrentPlayer(), mainMenu, cardMenu)
 
 		// TESTING
 		// move := "P"
@@ -65,11 +65,11 @@ func (g *Gameboard) Play() {
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
 			keepPlacing := true
-			itFits, valid, gb := g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+			itFits, valid, ngb := gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 			var moveMenu Menu
 
 			for keepPlacing {
-				gb.Display()
+				ngb.Display()
 				if itFits {
 					moveMenu = GetCompleteMoveMenu()
 				}
@@ -80,52 +80,52 @@ func (g *Gameboard) Play() {
 				if !valid {
 					moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
 				}
-				pieceMove := GetPlayerMove(g.Players[g.currentPlayerIndex], moveMenu, rotateMenu)
+				pieceMove := GetPlayerMove(*gb.CurrentPlayer(), moveMenu, rotateMenu)
 				if IsValidMove(pieceMove, moveMenu, rotateMenu) {
 					switch strings.ToUpper(pieceMove) {
 					case "P": // Place
-						g = &gb
+						gb = &ngb
 						curLandPiece.PlacedAt = &placeXY
 						log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
 						keepPlacing = false
-						g.CheckCards()
+						gb.UpdateCards()
 					case "R": // Right
 						placeXY.X++
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.X--
 							moveMenu.RemoveOption("R")
 						}
 					case "L": // Left
 						placeXY.X--
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.X++
 							moveMenu.RemoveOption("L")
 						}
 					case "U": // Up
 						placeXY.Y--
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.Y++
 							moveMenu.RemoveOption("U")
 						}
 					case "D": // Down
 						placeXY.Y++
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						if !itFits {
 							placeXY.Y--
 							moveMenu.RemoveOption("D")
 						}
 					case "C": // rotate Clockwise
 						curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						//TODO: can not currently happen, undo rotate when it does
 						// if !itFits {
 						// }
 					case "A": // rotate AntiClockwise
 						curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-						itFits, valid, gb = g.PlacePiece(&g.Players[g.currentPlayerIndex], *curLandPiece, placeXY)
+						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
 						//TODO: can not currently happen, undo rotate when it does
 						// if !itFits {
 						// }
@@ -140,10 +140,7 @@ func (g *Gameboard) Play() {
 
 		if !keepTurn {
 			//next turn:
-			g.currentPlayerIndex++
-			if g.currentPlayerIndex >= len(g.Players) {
-				g.currentPlayerIndex = 0
-			}
+			gb.NextPlayer()
 		}
 	}
 
@@ -152,28 +149,28 @@ func (g *Gameboard) Play() {
 // PlacePiece checks if a LandPiece fits on Gameboard at provided Coordinate
 // Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
 // Returns confirmation if the piece could fit, if board in in valid state & the new Gameboard
-func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
+func (gb Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
 	binStr := lp.String()
 	boardValid := true
 
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
 	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
-		return false, false, g
+		return false, false, gb
 	}
 
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
 			if binStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
-				block := g.Board[c.Y+y][c.X+x]
+				block := gb.Board[c.Y+y][c.X+x]
 				marker := block.Marker
 				if block.Belongs_to == nil || (block.Belongs_to.Name == p.Name) {
 					if strings.Trim(marker, " ") == OpenBlock.Marker {
 						marker = LandPieceBlock.Marker
 					}
-					g.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p}
+					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p}
 				} else {
-					g.Board[c.Y+y][c.X+x] = Block{Marker: marker, Invalid: true}
+					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Invalid: true}
 					boardValid = false
 				}
 			}
@@ -182,7 +179,7 @@ func (g Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool
 
 	// fmt.Println(g)
 
-	return true, boardValid, g // it fits
+	return true, boardValid, gb // it fits
 }
 
 func GetCardMenu(p Player) Menu {
@@ -200,10 +197,10 @@ func GetCardMenu(p Player) Menu {
 	return cardMenu
 }
 
-func (g *Gameboard) CheckCards() {
+func (gb *Gameboard) UpdateCards() {
 	for y := 0; y < 12; y++ {
 		for x := 0; x < 12; x++ {
-			block := g.Board[y][x]
+			block := gb.Board[y][x]
 			if block.Belongs_to != nil && block.Marker != OpenBlock.Marker && block.Marker != LandPieceBlock.Marker && block.Marker != HomeBlock.Marker {
 				typ := ""
 				switch block.Marker {
@@ -218,21 +215,21 @@ func (g *Gameboard) CheckCards() {
 					block.Belongs_to.RockCards = append(block.Belongs_to.RockCards, RockCard)
 				}
 				log.Default().Printf("Player %s gains a %s card\n", block.Belongs_to.Name, typ)
-				g.Board[y][x].Marker = LandPieceBlock.Marker
+				gb.Board[y][x].Marker = LandPieceBlock.Marker
 			}
 		}
 	}
 }
 
-func (g Gameboard) GetRandomPosition(area Area) (int, int) {
+func (gb Gameboard) GetRandomPosition(area Area) (int, int) {
 	for {
 		x := rand.Intn(area.End.X-area.Start.X) + area.Start.X
 		y := rand.Intn(area.End.Y-area.Start.Y) + area.Start.Y
 
-		if g.Board[y][x].Marker == OpenBlock.Marker {
+		if gb.Board[y][x].Marker == OpenBlock.Marker {
 			return x, y
 		} else {
-			log.Default().Printf("%d,%d occupied by %s", x, y, g.Board[y][x].Belongs_to)
+			log.Default().Printf("%d,%d occupied by %s", x, y, gb.Board[y][x].Belongs_to)
 		}
 	}
 }
