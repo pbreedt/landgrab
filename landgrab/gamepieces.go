@@ -42,7 +42,8 @@ func (s LandPiecesSlice) Contains(num uint16) bool {
 func (lps LandPiecesSlice) PrintUnplacedN(startIdx, n int) int {
 	var nums []uint16
 	firstPieceIdx := -1
-
+	selectIdx := 1
+	selectHdr := ""
 	for i := startIdx; len(nums) < n && i < len(lps); i++ {
 		// log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].PlacedAt)
 		if lps[i].PlacedAt == nil {
@@ -50,9 +51,12 @@ func (lps LandPiecesSlice) PrintUnplacedN(startIdx, n int) int {
 				firstPieceIdx = i
 			}
 			nums = append(nums, lps[i].Value)
+			selectHdr += fmt.Sprintf(" [%2d] |", selectIdx)
+			selectIdx++
 		}
 	}
 
+	fmt.Println(selectHdr[1:])
 	fmt.Println(ToBinaryGrid(nums...))
 
 	return firstPieceIdx
@@ -87,14 +91,22 @@ func (lp LandPiece) RightColEmpty() bool {
 
 func ToBinaryGrid(nums ...uint16) string {
 	line1, line2, line3, line4 := "", "", "", ""
-	for _, num := range nums {
+	for i, num := range nums {
 		binaryStr := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%016b", num), "0", "."), "1", "#")
 		// fmt.Println("ToBinaryGrid before:", binaryStr)
 
-		line1 += binaryStr[0:4] + " | "
-		line2 += binaryStr[4:8] + " | "
-		line3 += binaryStr[8:12] + " | "
-		line4 += binaryStr[12:16] + " | "
+		if i == 0 {
+			line1 += ColorString(binaryStr[0:4], Red) + " | "
+			line2 += ColorString(binaryStr[4:8], Red) + " | "
+			line3 += ColorString(binaryStr[8:12], Red) + " | "
+			line4 += ColorString(binaryStr[12:16], Red) + " | "
+		} else {
+			line1 += binaryStr[0:4] + " | "
+			line2 += binaryStr[4:8] + " | "
+			line3 += binaryStr[8:12] + " | "
+			line4 += binaryStr[12:16] + " | "
+		}
+
 	}
 
 	// Join the rows of the grid with spaces

@@ -14,6 +14,7 @@ type Gameboard struct {
 	LandPieces         *LandPiecesSlice
 	currentPieceIndex  int
 	currentPlayerIndex int
+	showNumPieces      int
 }
 
 // Intended for initial configuration of gameboard
@@ -40,7 +41,7 @@ func (gb *Gameboard) NextPlayer() *Player {
 
 func (gb Gameboard) Display() *LandPiece {
 	fmt.Println(gb)
-	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, 5)
+	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, gb.showNumPieces)
 	return &(*gb.LandPieces)[curPcIdx]
 }
 

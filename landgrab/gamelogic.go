@@ -1,14 +1,17 @@
 package landgrab
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"strings"
 )
 
 func (gb *Gameboard) Initialize(players ...Player) {
 	gb.Players = append(gb.Players, players...)
 	areas := StakePlayerAreas(len(players))
+	gb.showNumPieces = 5
 
 	for i := 0; i < len(players); i++ {
 		// assign 1 Swap card to eack player
@@ -61,6 +64,15 @@ func (gb *Gameboard) Play() {
 		//do move:
 		switch strings.ToUpper(move) {
 		case "Q": // Quit
+			return
+		case "G": // Grab
+			keepTurn = true
+			return
+		case "S": // Swap
+			gb.SwapPiece()
+			keepTurn = true
+		case "R": // Rock
+			keepTurn = true
 			return
 		case "P": // Place a piece
 			placeXY := Coordinate{X: 0, Y: 0}
@@ -144,6 +156,28 @@ func (gb *Gameboard) Play() {
 		}
 	}
 
+}
+
+func (gb *Gameboard) SwapPiece() {
+	selectedIdx := 0
+	for selectedIdx <= 0 {
+		swapeMenu := Menu{Category: "Select piece", Options: []Option{}}
+
+		for i := 1; i <= gb.showNumPieces; i++ {
+			swapeMenu.Options = append(swapeMenu.Options, Option{Display: fmt.Sprintf("[%d]", i), ActionKey: fmt.Sprintf("%d", i)})
+		}
+
+		gb.Display()
+		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), swapeMenu)
+		if IsValidMove(pieceMove, swapeMenu) {
+			newIdx, err := strconv.Atoi(pieceMove)
+			if err == nil {
+				selectedIdx = newIdx
+				gb.currentPieceIndex = gb.currentPieceIndex + newIdx - 1
+				log.Default().Printf("New piece selected: %d", gb.currentPieceIndex)
+			}
+		}
+	}
 }
 
 // PlacePiece checks if a LandPiece fits on Gameboard at provided Coordinate
