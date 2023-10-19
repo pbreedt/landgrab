@@ -40,6 +40,7 @@ func (gb *Gameboard) NextPlayer() *Player {
 }
 
 func (gb Gameboard) Display() *LandPiece {
+	fmt.Printf("cur.piece:%d, cur.player.idx:%d, cur.player:%s\n", gb.currentPieceIndex, gb.currentPlayerIndex, gb.CurrentPlayer().Name)
 	fmt.Println(gb)
 	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, gb.showNumPieces)
 	return &(*gb.LandPieces)[curPcIdx]

@@ -75,77 +75,7 @@ func (gb *Gameboard) Play() {
 			keepTurn = true
 			return
 		case "P": // Place a piece
-			placeXY := Coordinate{X: 0, Y: 0}
-			keepPlacing := true
-			itFits, valid, ngb := gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-			var moveMenu Menu
-
-			for keepPlacing {
-				ngb.Display()
-				if itFits {
-					moveMenu = GetCompleteMoveMenu()
-				}
-				rotateMenu := Menu{Category: "Rotate piece", Options: []Option{
-					{Display: "[C]lockwise", ActionKey: "C"},
-					{Display: "[A]nti-clockwise", ActionKey: "A"},
-				}}
-				if !valid {
-					moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
-				}
-				pieceMove := GetPlayerMove(*gb.CurrentPlayer(), moveMenu, rotateMenu)
-				if IsValidMove(pieceMove, moveMenu, rotateMenu) {
-					switch strings.ToUpper(pieceMove) {
-					case "P": // Place
-						gb = &ngb
-						curLandPiece.PlacedAt = &placeXY
-						log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
-						keepPlacing = false
-						gb.UpdateCards()
-					case "R": // Right
-						placeXY.X++
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						if !itFits {
-							placeXY.X--
-							moveMenu.RemoveOption("R")
-						}
-					case "L": // Left
-						placeXY.X--
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						if !itFits {
-							placeXY.X++
-							moveMenu.RemoveOption("L")
-						}
-					case "U": // Up
-						placeXY.Y--
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						if !itFits {
-							placeXY.Y++
-							moveMenu.RemoveOption("U")
-						}
-					case "D": // Down
-						placeXY.Y++
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						if !itFits {
-							placeXY.Y--
-							moveMenu.RemoveOption("D")
-						}
-					case "C": // rotate Clockwise
-						curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						//TODO: can not currently happen, undo rotate when it does
-						// if !itFits {
-						// }
-					case "A": // rotate AntiClockwise
-						curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-						itFits, valid, ngb = gb.PlacePiece(gb.CurrentPlayer(), *curLandPiece, placeXY)
-						//TODO: can not currently happen, undo rotate when it does
-						// if !itFits {
-						// }
-					}
-				} else {
-					log.Default().Printf("Invalid option: %s\n", move)
-				}
-			}
+			gb = gb.PlacePiece(curLandPiece)
 		default:
 			keepTurn = true
 		}
@@ -173,6 +103,7 @@ func (gb *Gameboard) SwapPiece() {
 			newIdx, err := strconv.Atoi(pieceMove)
 			if err == nil {
 				selectedIdx = newIdx
+				log.Default().Printf("Current piece: %d", gb.currentPieceIndex)
 				gb.currentPieceIndex = gb.currentPieceIndex + newIdx - 1
 				log.Default().Printf("New piece selected: %d", gb.currentPieceIndex)
 			}
@@ -180,10 +111,87 @@ func (gb *Gameboard) SwapPiece() {
 	}
 }
 
-// PlacePiece checks if a LandPiece fits on Gameboard at provided Coordinate
+func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
+	placeXY := Coordinate{X: 0, Y: 0}
+	keepPlacing := true
+	itFits, valid, ngb := gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+	var moveMenu Menu
+
+	for keepPlacing {
+		ngb.Display()
+		if itFits {
+			moveMenu = GetCompleteMoveMenu()
+		}
+		rotateMenu := Menu{Category: "Rotate piece", Options: []Option{
+			{Display: "[C]lockwise", ActionKey: "C"},
+			{Display: "[A]nti-clockwise", ActionKey: "A"},
+		}}
+		if !valid {
+			moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
+		}
+		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), moveMenu, rotateMenu)
+		if IsValidMove(pieceMove, moveMenu, rotateMenu) {
+			switch strings.ToUpper(pieceMove) {
+			case "P": // Place
+				curLandPiece.PlacedAt = &placeXY
+				ngb.currentPieceIndex++
+				log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
+				keepPlacing = false
+				ngb.UpdateCards()
+				return &ngb
+			case "R": // Right
+				placeXY.X++
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				if !itFits {
+					placeXY.X--
+					moveMenu.RemoveOption("R")
+				}
+			case "L": // Left
+				placeXY.X--
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				if !itFits {
+					placeXY.X++
+					moveMenu.RemoveOption("L")
+				}
+			case "U": // Up
+				placeXY.Y--
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				if !itFits {
+					placeXY.Y++
+					moveMenu.RemoveOption("U")
+				}
+			case "D": // Down
+				placeXY.Y++
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				if !itFits {
+					placeXY.Y--
+					moveMenu.RemoveOption("D")
+				}
+			case "C": // rotate Clockwise
+				curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				//TODO: can not currently happen, undo rotate when it does
+				// if !itFits {
+				// }
+			case "A": // rotate AntiClockwise
+				curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
+				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				//TODO: can not currently happen, undo rotate when it does
+				// if !itFits {
+				// }
+			}
+		} else {
+			log.Default().Printf("Invalid option: %s\n", pieceMove)
+		}
+	}
+
+	return gb
+}
+
+// PlacePiecePreview checks if a LandPiece fits on Gameboard at provided Coordinate
 // Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
 // Returns confirmation if the piece could fit, if board in in valid state & the new Gameboard
-func (gb Gameboard) PlacePiece(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
+func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
 	binStr := lp.String()
 	boardValid := true
 
