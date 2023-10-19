@@ -63,13 +63,14 @@ func (gb Gameboard) String() string {
 }
 
 type Block struct {
-	Marker     string
-	Belongs_to *Player
-	Invalid    bool
+	Marker         string
+	Belongs_to     *Player
+	Highlighted    bool
+	LandPieceValue uint16
 }
 
 func (b Block) String() string {
-	if b.Invalid {
+	if b.Highlighted {
 		return ColorString(fmt.Sprintf("%1s", b.Marker), Red)
 	}
 	if b.Belongs_to != nil {

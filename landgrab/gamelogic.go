@@ -66,14 +66,13 @@ func (gb *Gameboard) Play() {
 		case "Q": // Quit
 			return
 		case "G": // Grab
+			gb.GrabPiece()
 			keepTurn = true
-			return
 		case "S": // Swap
 			gb.SwapPiece()
 			keepTurn = true
 		case "R": // Rock
 			keepTurn = true
-			return
 		case "P": // Place a piece
 			gb = gb.PlacePiece(curLandPiece)
 		default:
@@ -88,18 +87,114 @@ func (gb *Gameboard) Play() {
 
 }
 
+func (gb *Gameboard) GrabPiece() *Gameboard {
+	grabPos := Coordinate{0, 0}
+	grabPieceValue, valid, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+	keepGoing := true
+
+	for keepGoing {
+		selectMenu := GetMovePieceMenu("Select piece")
+		selectMenu.Options = append(selectMenu.Options, Option{Display: "[N]one", ActionKey: "N"})
+		if valid {
+			selectMenu.Options = append(selectMenu.Options, Option{Display: "[G]rab piece", ActionKey: "G"})
+		}
+
+		ngb.Display()
+		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), selectMenu)
+		if IsValidMove(pieceMove, selectMenu) {
+			switch strings.ToUpper(pieceMove) {
+			case "N": // Select NONE
+				keepGoing = false
+			case "G": // Grab
+				// TODO: remove piece from GameBoard
+				log.Default().Printf("Land piece %d grabbed from %v\n", grabPieceValue, grabPos)
+
+				// curLandPiece.PlacedAt = &placeXY
+				// ngb.currentPieceIndex++
+				// keepPlacing = false
+				// ngb.UpdateCards()
+				return &ngb
+			case "R": // Right
+				if (grabPos.X + 1) < 12 {
+					grabPos.X++
+				} else {
+					selectMenu.RemoveOption("R")
+				}
+				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+			case "L": // Left
+				if (grabPos.X - 1) >= 0 {
+					grabPos.X--
+				} else {
+					selectMenu.RemoveOption("L")
+				}
+				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+			case "U": // Up
+				if (grabPos.Y - 1) >= 0 {
+					grabPos.Y--
+				} else {
+					selectMenu.RemoveOption("D")
+				}
+				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+			case "D": // Down
+				if (grabPos.Y + 1) < 12 {
+					grabPos.Y++
+				} else {
+					selectMenu.RemoveOption("D")
+				}
+				grabPos.Y++
+				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+			}
+		}
+	}
+
+	log.Default().Printf("Land piece grabbed: placed:%d\n", grabPieceValue)
+
+	return gb
+}
+
+func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (uint16, bool, Gameboard) {
+	grabPieceValue := uint16(0)
+
+	// cannot select at coordinate
+	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
+		return 0, false, gb
+	}
+
+	for y := c.Y; y < 12 && grabPieceValue <= 0; y++ {
+		for x := c.X; x < 12 && grabPieceValue <= 0; x++ {
+			if gb.Board[c.Y][c.X].LandPieceValue > 0 {
+				if grabPieceValue == 0 {
+					grabPieceValue = gb.Board[c.Y][c.X].LandPieceValue
+				}
+			}
+		}
+	}
+
+	block := gb.Board[c.Y][c.X]
+	log.Default().Printf("PreviewGrabPiece: %v at %s\n", block, c)
+	marker := "X"
+	if block.Marker == LandPieceBlock.Marker && (block.Belongs_to.Name != p.Name) {
+		gb.Board[c.Y][c.X] = Block{Marker: marker, Highlighted: true}
+		grabPieceValue = 1
+	} else {
+		gb.Board[c.Y][c.X] = Block{Marker: marker}
+	}
+
+	return grabPieceValue, true, gb // coordinate valid
+}
+
 func (gb *Gameboard) SwapPiece() {
 	selectedIdx := 0
 	for selectedIdx <= 0 {
-		swapeMenu := Menu{Category: "Select piece", Options: []Option{}}
+		swapMenu := Menu{Category: "Select piece", Options: []Option{}}
 
 		for i := 1; i <= gb.showNumPieces; i++ {
-			swapeMenu.Options = append(swapeMenu.Options, Option{Display: fmt.Sprintf("[%d]", i), ActionKey: fmt.Sprintf("%d", i)})
+			swapMenu.Options = append(swapMenu.Options, Option{Display: fmt.Sprintf("[%d]", i), ActionKey: fmt.Sprintf("%d", i)})
 		}
 
 		gb.Display()
-		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), swapeMenu)
-		if IsValidMove(pieceMove, swapeMenu) {
+		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), swapMenu)
+		if IsValidMove(pieceMove, swapMenu) {
 			newIdx, err := strconv.Atoi(pieceMove)
 			if err == nil {
 				selectedIdx = newIdx
@@ -120,7 +215,7 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 	for keepPlacing {
 		ngb.Display()
 		if itFits {
-			moveMenu = GetCompleteMoveMenu()
+			moveMenu = GetMovePieceMenu("Move piece")
 		}
 		rotateMenu := Menu{Category: "Rotate piece", Options: []Option{
 			{Display: "[C]lockwise", ActionKey: "C"},
@@ -210,9 +305,9 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bo
 					if strings.Trim(marker, " ") == OpenBlock.Marker {
 						marker = LandPieceBlock.Marker
 					}
-					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p}
+					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p, LandPieceValue: lp.Value}
 				} else {
-					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Invalid: true}
+					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Highlighted: true}
 					boardValid = false
 				}
 			}
@@ -279,9 +374,18 @@ func (gb Gameboard) GetRandomPosition(area Area) (int, int) {
 type Coordinate struct {
 	X, Y int
 }
+
+func (c Coordinate) String() string {
+	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
+}
+
 type Area struct {
 	Start Coordinate
 	End   Coordinate
+}
+
+func (a Area) String() string {
+	return fmt.Sprintf("%s->%s", a.Start, a.End)
 }
 
 // StakePlayerAreas ensures each player has equal area
@@ -368,8 +472,8 @@ func (g *Gameboard) MarkArea(area Area, marker string) {
 	}
 }
 
-func GetCompleteMoveMenu() Menu {
-	return Menu{Category: "Move piece", Options: []Option{
+func GetMovePieceMenu(category string) Menu {
+	return Menu{Category: category, Options: []Option{
 		{Display: "[L]eft", ActionKey: "L"},
 		{Display: "[R]ight", ActionKey: "R"},
 		{Display: "[U]p", ActionKey: "U"},
