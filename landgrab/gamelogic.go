@@ -237,6 +237,7 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 		}}
 		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), moveMenu, rotateMenu)
 		if IsValidMove(pieceMove, moveMenu, rotateMenu) {
+			var previewBoard Gameboard
 			switch strings.ToUpper(pieceMove) {
 			case "P": // Place
 				curLandPiece.PlacedAt = &placeXY
@@ -247,44 +248,47 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 				return &ngb
 			case "R": // Right
 				placeXY.X++
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				if !itFits {
 					placeXY.X--
 					moveMenu.RemoveOption("R")
 				}
 			case "L": // Left
 				placeXY.X--
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				if !itFits {
 					placeXY.X++
 					moveMenu.RemoveOption("L")
 				}
 			case "U": // Up
 				placeXY.Y--
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				if !itFits {
 					placeXY.Y++
 					moveMenu.RemoveOption("U")
 				}
 			case "D": // Down
 				placeXY.Y++
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				if !itFits {
 					placeXY.Y--
 					moveMenu.RemoveOption("D")
 				}
 			case "C": // rotate Clockwise
 				curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
 			case "A": // rotate AntiClockwise
 				curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-				itFits, valid, ngb = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
+			}
+			if itFits {
+				ngb = previewBoard
 			}
 		} else {
 			log.Default().Printf("Invalid option: %s\n", pieceMove)
@@ -303,6 +307,7 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bo
 
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
 	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
+		log.Default().Printf("Coord %s does not fit\n", c)
 		return false, false, gb
 	}
 
