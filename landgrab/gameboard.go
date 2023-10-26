@@ -147,6 +147,30 @@ func (p Player) String() string {
 	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Grab Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.GrabCards), len(p.RockCards)), p.Color)
 }
 
-func (gb *Gameboard) HighlightLandPieceAt(lp LandPiece, c Coordinate) {
+func (gb *Gameboard) RemoveLandPieceFromGameboard(lp LandPiece) {
+	if lp.PlacedAt == nil {
+		return
+	}
+
+	lpStr := lp.String()
+
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			sidx := x + (y * 4)
+			if lpStr[sidx:sidx+1] == "#" && (lp.PlacedAt.Y+y >= 0) && (lp.PlacedAt.X+x >= 0) && (lp.PlacedAt.Y+y < 16) && (lp.PlacedAt.X+x < 16) {
+				gb.Board[lp.PlacedAt.Y+y][lp.PlacedAt.X+x] = Block{}
+			}
+		}
+	}
+
+	// for y := lp.PlacedAt.Y; y < lp.PlacedAt.Y+4; y++ {
+	// 	for x := lp.PlacedAt.X; x < lp.PlacedAt.X+4; x++ {
+	// 		if gb.Board[y][x].LandPieceValue > 0 {
+	// 			if grabPieceValue == 0 {
+	// 				grabPieceValue = gb.Board[c.Y][c.X].LandPieceValue
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 }

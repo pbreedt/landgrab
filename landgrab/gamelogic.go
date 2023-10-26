@@ -89,13 +89,13 @@ func (gb *Gameboard) Play() {
 
 func (gb *Gameboard) GrabPiece() *Gameboard {
 	grabPos := Coordinate{0, 0}
-	grabPieceValue, canGrab, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+	grabPieceIndex, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 	keepGoing := true
 
 	for keepGoing {
 		selectMenu := GetMovePieceMenu("Select piece")
 		selectMenu.Options = append(selectMenu.Options, Option{Display: "Grab [N]one", ActionKey: "N"})
-		if canGrab {
+		if grabPieceIndex >= 0 {
 			selectMenu.Options = append(selectMenu.Options, Option{Display: "[G]rab piece", ActionKey: "G"})
 		}
 
@@ -107,64 +107,58 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 				keepGoing = false
 			case "G": // Grab
 				// TODO: remove piece from GameBoard
-				log.Default().Printf("Land piece %d grabbed from %v\n", grabPieceValue, grabPos)
+				log.Default().Printf("Land piece %s grabbed from %s\n", (*gb.LandPieces)[grabPieceIndex], grabPos)
 				gb.CurrentPlayer().GrabCards = gb.CurrentPlayer().GrabCards[1:]
 				gb.UpdateCards()
-				// xgb := RemovePieceFromGameboard()
-				for idx, lp := range *gb.LandPieces {
-					if lp.Value == grabPieceValue {
-						log.Default().Printf("Found Land piece %d at index %d placed at:%s\n", grabPieceValue, idx, lp.PlacedAt)
-					}
-				}
-				// curLandPiece.PlacedAt = &placeXY
-				// ngb.currentPieceIndex++
-				// keepPlacing = false
-				// ngb.UpdateCards()
-				return &ngb
+				gb.RemoveLandPieceFromGameboard((*gb.LandPieces)[grabPieceIndex])
+				return gb
 			case "R": // Right
 				if (grabPos.X + 1) < 12 {
 					grabPos.X++
 				} else {
 					selectMenu.RemoveOption("R")
 				}
-				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceIndex, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "L": // Left
 				if (grabPos.X - 1) >= 0 {
 					grabPos.X--
 				} else {
 					selectMenu.RemoveOption("L")
 				}
-				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceIndex, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "U": // Up
 				if (grabPos.Y - 1) >= 0 {
 					grabPos.Y--
 				} else {
 					selectMenu.RemoveOption("D")
 				}
-				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceIndex, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "D": // Down
 				if (grabPos.Y + 1) < 12 {
 					grabPos.Y++
 				} else {
 					selectMenu.RemoveOption("D")
 				}
-				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceIndex, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			}
 		}
 	}
 
-	log.Default().Printf("Land piece grabbed: placed:%d\n", grabPieceValue)
+	log.Default().Printf("No land piece grabbed")
 
 	return gb
 }
 
-func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (uint16, bool, Gameboard) {
+// Place marker on board, highlight piece if it's up for grabs,
+// return index of LandPiece if grab-able, updated gameboard
+func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (int, Gameboard) {
 	grabPieceValue := uint16(0)
-	canGrab := false
+	grabPieceIdx := -1
+	// canGrab := false
 
 	// cannot select at coordinate
 	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
-		return 0, canGrab, gb
+		return 0, gb
 	}
 
 	for y := c.Y; y < 12 && grabPieceValue <= 0; y++ {
@@ -181,17 +175,17 @@ func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (uint16, bool, Gam
 	log.Default().Printf("PreviewGrabPiece: %v at %s\n", block, c)
 	if block.Marker == LandPieceBlock.Marker && (block.Belongs_to.Name != p.Name) {
 		gb.Board[c.Y][c.X].Highlighted = true
-		canGrab = true
 		for idx, lp := range *gb.LandPieces {
 			if lp.Value == grabPieceValue {
 				log.Default().Printf("Found Land piece %d at index %d placed at:%s\n", grabPieceValue, idx, lp.PlacedAt)
 				_, _, gb = gb.PlacePiecePreview(gb.CurrentPlayer(), lp, *lp.PlacedAt)
+				grabPieceIdx = idx
 			}
 		}
 	}
 	gb.Board[c.Y][c.X].Marker = "X"
 
-	return grabPieceValue, canGrab, gb
+	return grabPieceIdx, gb
 }
 
 func (gb *Gameboard) SwapPiece() {
@@ -302,7 +296,7 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 // Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
 // Returns confirmation if the piece could fit, if board in in valid state & the new Gameboard
 func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
-	binStr := lp.String()
+	lpStr := lp.String()
 	boardValid := true
 
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
@@ -314,7 +308,7 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bo
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
-			if binStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
+			if lpStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
 				block := gb.Board[c.Y+y][c.X+x]
 				marker := block.Marker
 				if block.Belongs_to == nil || (block.Belongs_to.Name == p.Name) {
