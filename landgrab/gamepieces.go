@@ -45,7 +45,7 @@ func (lps LandPiecesSlice) PrintUnplacedN(startIdx, n int) int {
 	selectIdx := 1
 	selectHdr := ""
 	for i := startIdx; len(nums) < n && i < len(lps); i++ {
-		// log.Default().Printf("Land piece: mem:%p, index=%d, placed:%v\n", &lps[i], i, lps[i].PlacedAt)
+		// log.Default().Printf("Land piece:%s mem:%p, index=%d, placed:%v\n", lps[i], &lps[i], i, lps[i].PlacedAt)
 		if lps[i].PlacedAt == nil {
 			if firstPieceIdx < 0 {
 				firstPieceIdx = i

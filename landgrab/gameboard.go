@@ -147,10 +147,12 @@ func (p Player) String() string {
 	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Grab Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.GrabCards), len(p.RockCards)), p.Color)
 }
 
-func (gb *Gameboard) RemoveLandPieceFromGameboard(lp LandPiece) {
-	if lp.PlacedAt == nil {
+func (gb *Gameboard) RemoveLandPieceFromGameboard(landPieceIdx int) {
+	if (*gb.LandPieces)[landPieceIdx].PlacedAt == nil {
 		return
 	}
+
+	lp := (*gb.LandPieces)[landPieceIdx]
 
 	lpStr := lp.String()
 
@@ -163,14 +165,23 @@ func (gb *Gameboard) RemoveLandPieceFromGameboard(lp LandPiece) {
 		}
 	}
 
-	// for y := lp.PlacedAt.Y; y < lp.PlacedAt.Y+4; y++ {
-	// 	for x := lp.PlacedAt.X; x < lp.PlacedAt.X+4; x++ {
-	// 		if gb.Board[y][x].LandPieceValue > 0 {
-	// 			if grabPieceValue == 0 {
-	// 				grabPieceValue = gb.Board[c.Y][c.X].LandPieceValue
-	// 			}
-	// 		}
-	// 	}
-	// }
+	(*gb.LandPieces)[landPieceIdx].PlacedAt = nil
+	// log.Default().Printf("Land piece:%s mem:%p, placed:%v\n", (*gb.LandPieces)[landPieceIdx], &(*gb.LandPieces)[landPieceIdx], (*gb.LandPieces)[landPieceIdx].PlacedAt)
+}
 
+// Move LandPiece from used index to just before current piece index
+// then set current piece index 1 back
+func (gb *Gameboard) SetNextLandPieceTo(landPieceIdx int) {
+	if landPieceIdx < 0 || landPieceIdx >= len(*gb.LandPieces) {
+		return
+	}
+
+	removedLandPiece := (*gb.LandPieces)[landPieceIdx]
+	// Remove LandPiece from slice
+	(*gb.LandPieces) = append((*gb.LandPieces)[:landPieceIdx], (*gb.LandPieces)[landPieceIdx+1:]...)
+
+	// Add LandPiece back at index before current piece index (since slice is shorter now)
+	(*gb.LandPieces) = append((*gb.LandPieces)[:gb.currentPieceIndex-1], append(LandPiecesSlice{removedLandPiece}, (*gb.LandPieces)[gb.currentPieceIndex-1:]...)...)
+
+	gb.currentPieceIndex--
 }

@@ -87,7 +87,7 @@ func (gb *Gameboard) Play() {
 
 }
 
-func (gb *Gameboard) GrabPiece() *Gameboard {
+func (gb *Gameboard) GrabPiece() {
 	grabPos := Coordinate{0, 0}
 	grabPieceIndex, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 	keepGoing := true
@@ -106,12 +106,13 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 			case "N": // Select NONE
 				keepGoing = false
 			case "G": // Grab
-				// TODO: remove piece from GameBoard
 				log.Default().Printf("Land piece %s grabbed from %s\n", (*gb.LandPieces)[grabPieceIndex], grabPos)
+				// Remove Player's Grab card
 				gb.CurrentPlayer().GrabCards = gb.CurrentPlayer().GrabCards[1:]
 				gb.UpdateCards()
-				gb.RemoveLandPieceFromGameboard((*gb.LandPieces)[grabPieceIndex])
-				return gb
+				gb.RemoveLandPieceFromGameboard(grabPieceIndex)
+				gb.SetNextLandPieceTo(grabPieceIndex)
+				return
 			case "R": // Right
 				if (grabPos.X + 1) < 12 {
 					grabPos.X++
@@ -146,7 +147,6 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 
 	log.Default().Printf("No land piece grabbed")
 
-	return gb
 }
 
 // Place marker on board, highlight piece if it's up for grabs,
