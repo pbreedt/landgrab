@@ -20,10 +20,7 @@ type Gameboard struct {
 // Intended for initial configuration of gameboard
 func NewGameboard() Gameboard {
 	var gb Gameboard
-	// for i := 0; i < boardsize; i++ {
-	// 	for j := 0; j < boardsize; j++ {
-	// 	}
-	// }
+
 	return gb
 }
 
@@ -148,4 +145,8 @@ type Player struct {
 
 func (p Player) String() string {
 	return ColorString(fmt.Sprintf("%10s | Swap Cards:%d, Grab Cards:%d, Rock Cards:%d", p.Name, len(p.SwapCards), len(p.GrabCards), len(p.RockCards)), p.Color)
+}
+
+func (gb *Gameboard) HighlightLandPieceAt(lp LandPiece, c Coordinate) {
+
 }

@@ -89,13 +89,13 @@ func (gb *Gameboard) Play() {
 
 func (gb *Gameboard) GrabPiece() *Gameboard {
 	grabPos := Coordinate{0, 0}
-	grabPieceValue, valid, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+	grabPieceValue, canGrab, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 	keepGoing := true
 
 	for keepGoing {
 		selectMenu := GetMovePieceMenu("Select piece")
-		selectMenu.Options = append(selectMenu.Options, Option{Display: "[N]one", ActionKey: "N"})
-		if valid {
+		selectMenu.Options = append(selectMenu.Options, Option{Display: "Grab [N]one", ActionKey: "N"})
+		if canGrab {
 			selectMenu.Options = append(selectMenu.Options, Option{Display: "[G]rab piece", ActionKey: "G"})
 		}
 
@@ -108,7 +108,14 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 			case "G": // Grab
 				// TODO: remove piece from GameBoard
 				log.Default().Printf("Land piece %d grabbed from %v\n", grabPieceValue, grabPos)
-
+				gb.CurrentPlayer().GrabCards = gb.CurrentPlayer().GrabCards[1:]
+				gb.UpdateCards()
+				// xgb := RemovePieceFromGameboard()
+				for idx, lp := range *gb.LandPieces {
+					if lp.Value == grabPieceValue {
+						log.Default().Printf("Found Land piece %d at index %d placed at:%s\n", grabPieceValue, idx, lp.PlacedAt)
+					}
+				}
 				// curLandPiece.PlacedAt = &placeXY
 				// ngb.currentPieceIndex++
 				// keepPlacing = false
@@ -120,29 +127,28 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 				} else {
 					selectMenu.RemoveOption("R")
 				}
-				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "L": // Left
 				if (grabPos.X - 1) >= 0 {
 					grabPos.X--
 				} else {
 					selectMenu.RemoveOption("L")
 				}
-				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "U": // Up
 				if (grabPos.Y - 1) >= 0 {
 					grabPos.Y--
 				} else {
 					selectMenu.RemoveOption("D")
 				}
-				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "D": // Down
 				if (grabPos.Y + 1) < 12 {
 					grabPos.Y++
 				} else {
 					selectMenu.RemoveOption("D")
 				}
-				grabPos.Y++
-				grabPieceValue, valid, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
+				grabPieceValue, canGrab, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			}
 		}
 	}
@@ -154,10 +160,11 @@ func (gb *Gameboard) GrabPiece() *Gameboard {
 
 func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (uint16, bool, Gameboard) {
 	grabPieceValue := uint16(0)
+	canGrab := false
 
 	// cannot select at coordinate
 	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
-		return 0, false, gb
+		return 0, canGrab, gb
 	}
 
 	for y := c.Y; y < 12 && grabPieceValue <= 0; y++ {
@@ -172,15 +179,19 @@ func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (uint16, bool, Gam
 
 	block := gb.Board[c.Y][c.X]
 	log.Default().Printf("PreviewGrabPiece: %v at %s\n", block, c)
-	marker := "X"
 	if block.Marker == LandPieceBlock.Marker && (block.Belongs_to.Name != p.Name) {
-		gb.Board[c.Y][c.X] = Block{Marker: marker, Highlighted: true}
-		grabPieceValue = 1
-	} else {
-		gb.Board[c.Y][c.X] = Block{Marker: marker}
+		gb.Board[c.Y][c.X].Highlighted = true
+		canGrab = true
+		for idx, lp := range *gb.LandPieces {
+			if lp.Value == grabPieceValue {
+				log.Default().Printf("Found Land piece %d at index %d placed at:%s\n", grabPieceValue, idx, lp.PlacedAt)
+				_, _, gb = gb.PlacePiecePreview(gb.CurrentPlayer(), lp, *lp.PlacedAt)
+			}
+		}
 	}
+	gb.Board[c.Y][c.X].Marker = "X"
 
-	return grabPieceValue, true, gb // coordinate valid
+	return grabPieceValue, canGrab, gb
 }
 
 func (gb *Gameboard) SwapPiece() {
@@ -217,13 +228,13 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 		if itFits {
 			moveMenu = GetMovePieceMenu("Move piece")
 		}
+		if valid {
+			moveMenu.Options = append(moveMenu.Options, Option{Display: "[P]lace piece", ActionKey: "P"})
+		}
 		rotateMenu := Menu{Category: "Rotate piece", Options: []Option{
 			{Display: "[C]lockwise", ActionKey: "C"},
 			{Display: "[A]nti-clockwise", ActionKey: "A"},
 		}}
-		if !valid {
-			moveMenu = moveMenu.RemoveOption("P") // remove "Place piece"
-		}
 		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), moveMenu, rotateMenu)
 		if IsValidMove(pieceMove, moveMenu, rotateMenu) {
 			switch strings.ToUpper(pieceMove) {
@@ -478,6 +489,5 @@ func GetMovePieceMenu(category string) Menu {
 		{Display: "[R]ight", ActionKey: "R"},
 		{Display: "[U]p", ActionKey: "U"},
 		{Display: "[D]own", ActionKey: "D"},
-		{Display: "[P]lace piece", ActionKey: "P"},
 	}}
 }
