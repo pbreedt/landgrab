@@ -66,8 +66,12 @@ func (gb *Gameboard) Play() {
 		case "Q": // Quit
 			return
 		case "G": // Grab
-			gb.GrabPiece()
-			keepTurn = true
+			lp := gb.GrabPiece()
+			if lp != nil {
+				gb = gb.PlacePiece(lp)
+			} else {
+				keepTurn = true
+			}
 		case "S": // Swap
 			gb.SwapPiece()
 			keepTurn = true
@@ -167,7 +171,7 @@ func (gb Gameboard) PreviewPlaceRock(p *Player, c Coordinate) (bool, Gameboard) 
 	return placeOK, gb
 }
 
-func (gb *Gameboard) GrabPiece() {
+func (gb *Gameboard) GrabPiece() *LandPiece {
 	grabPos := Coordinate{0, 0}
 	grabPieceIndex, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 
@@ -184,7 +188,7 @@ func (gb *Gameboard) GrabPiece() {
 			switch strings.ToUpper(pieceMove) {
 			case "N": // Select NONE
 				log.Default().Printf("No land piece grabbed")
-				return
+				return nil
 			case "G": // Grab
 				log.Default().Printf("Land piece %s grabbed from %s\n", (*gb.LandPieces)[grabPieceIndex], grabPos)
 				// Remove Player's Grab card
@@ -192,7 +196,8 @@ func (gb *Gameboard) GrabPiece() {
 				gb.UpdateCards()
 				gb.RemoveLandPieceFromGameboard(grabPieceIndex)
 				gb.SetNextLandPieceTo(grabPieceIndex)
-				return
+				newLandPiece := &(*gb.LandPieces)[grabPieceIndex]
+				return newLandPiece
 			case "R": // Right
 				if (grabPos.X + 1) < 12 {
 					grabPos.X++

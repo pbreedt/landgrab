@@ -46,12 +46,11 @@ func (gb Gameboard) Display() *LandPiece {
 func (gb Gameboard) String() string {
 	bsh := ""
 	for i, p := range gb.Players {
-		bsh += fmt.Sprintf("Player %d: %v\n", i, p)
+		bsh += fmt.Sprintf("Player %d: %v\n", i+1, p)
 	}
 	bs := ""
 	for y := 0; y < boardsize; y++ {
 		for x := 0; x < boardsize; x++ {
-			// bs += fmt.Sprintf("[%+v](%2d,%2d)", gb.board[y][x], x, y)
 			bs += fmt.Sprintf("[%+v]", gb.Board[y][x])
 		}
 		bs += "\n"
