@@ -73,6 +73,7 @@ func (gb *Gameboard) Play() {
 			keepTurn = true
 		case "R": // Rock
 			keepTurn = true
+			gb.PlaceRock()
 		case "P": // Place a piece
 			gb = gb.PlacePiece(curLandPiece)
 		default:
@@ -87,12 +88,90 @@ func (gb *Gameboard) Play() {
 
 }
 
+func (gb *Gameboard) PlaceRock() {
+	placePos := Coordinate{0, 0}
+	ok, ngb := gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
+
+	for {
+		selectMenu := GetMovePieceMenu("Move rock")
+		selectMenu.Options = append(selectMenu.Options, Option{Display: "[C]ancel place", ActionKey: "C"})
+		if ok {
+			selectMenu.Options = append(selectMenu.Options, Option{Display: "[P]lace rock", ActionKey: "P"})
+		}
+
+		ngb.Display()
+		pieceMove := GetPlayerMove(*gb.CurrentPlayer(), selectMenu)
+		if IsValidMove(pieceMove, selectMenu) {
+			switch strings.ToUpper(pieceMove) {
+			case "C": // Don't place rock
+				log.Default().Printf("No rock placed")
+				return
+			case "P": // Place rock
+				log.Default().Printf("Rock placed at %s\n", placePos)
+				// Remove Player's Grab card
+				gb.CurrentPlayer().RockCards = gb.CurrentPlayer().RockCards[1:]
+				gb.UpdateCards()
+				gb.Board[placePos.Y][placePos.X] = Block{Marker: RockBlock.Marker, Belongs_to: gb.CurrentPlayer()}
+				return
+			case "R": // Right
+				if (placePos.X + 1) < 12 {
+					placePos.X++
+				} else {
+					selectMenu.RemoveOption("R")
+				}
+				ok, ngb = gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
+			case "L": // Left
+				if (placePos.X - 1) >= 0 {
+					placePos.X--
+				} else {
+					selectMenu.RemoveOption("L")
+				}
+				ok, ngb = gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
+			case "U": // Up
+				if (placePos.Y - 1) >= 0 {
+					placePos.Y--
+				} else {
+					selectMenu.RemoveOption("D")
+				}
+				ok, ngb = gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
+			case "D": // Down
+				if (placePos.Y + 1) < 12 {
+					placePos.Y++
+				} else {
+					selectMenu.RemoveOption("D")
+				}
+				ok, ngb = gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
+			}
+		}
+	}
+}
+
+func (gb Gameboard) PreviewPlaceRock(p *Player, c Coordinate) (bool, Gameboard) {
+	placeOK := false
+
+	// cannot select at coordinate
+	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
+		return placeOK, gb
+	}
+
+	block := gb.Board[c.Y][c.X]
+	log.Default().Printf("PreviewPlaceRock: %v at %s\n", block, c)
+	if block.Marker == OpenBlock.Marker {
+		gb.Board[c.Y][c.X].HighlightOK = true
+		placeOK = true
+	} else {
+		gb.Board[c.Y][c.X].HighlightErr = true
+	}
+	gb.Board[c.Y][c.X].Marker = "X"
+
+	return placeOK, gb
+}
+
 func (gb *Gameboard) GrabPiece() {
 	grabPos := Coordinate{0, 0}
 	grabPieceIndex, ngb := gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
-	keepGoing := true
 
-	for keepGoing {
+	for {
 		selectMenu := GetMovePieceMenu("Select piece")
 		selectMenu.Options = append(selectMenu.Options, Option{Display: "Grab [N]one", ActionKey: "N"})
 		if grabPieceIndex >= 0 {
@@ -104,7 +183,8 @@ func (gb *Gameboard) GrabPiece() {
 		if IsValidMove(pieceMove, selectMenu) {
 			switch strings.ToUpper(pieceMove) {
 			case "N": // Select NONE
-				keepGoing = false
+				log.Default().Printf("No land piece grabbed")
+				return
 			case "G": // Grab
 				log.Default().Printf("Land piece %s grabbed from %s\n", (*gb.LandPieces)[grabPieceIndex], grabPos)
 				// Remove Player's Grab card
@@ -144,9 +224,6 @@ func (gb *Gameboard) GrabPiece() {
 			}
 		}
 	}
-
-	log.Default().Printf("No land piece grabbed")
-
 }
 
 // Place marker on board, highlight piece if it's up for grabs,
@@ -154,13 +231,13 @@ func (gb *Gameboard) GrabPiece() {
 func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (int, Gameboard) {
 	grabPieceValue := uint16(0)
 	grabPieceIdx := -1
-	// canGrab := false
 
 	// cannot select at coordinate
 	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
 		return 0, gb
 	}
 
+	// TODO: grab replaces placed Rock 'R' with '#'
 	for y := c.Y; y < 12 && grabPieceValue <= 0; y++ {
 		for x := c.X; x < 12 && grabPieceValue <= 0; x++ {
 			if gb.Board[c.Y][c.X].LandPieceValue > 0 {
@@ -174,11 +251,11 @@ func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (int, Gameboard) {
 	block := gb.Board[c.Y][c.X]
 	log.Default().Printf("PreviewGrabPiece: %v at %s\n", block, c)
 	if block.Marker == LandPieceBlock.Marker && (block.Belongs_to.Name != p.Name) {
-		gb.Board[c.Y][c.X].Highlighted = true
+		gb.Board[c.Y][c.X].HighlightOK = true
 		for idx, lp := range *gb.LandPieces {
 			if lp.Value == grabPieceValue {
 				log.Default().Printf("Found Land piece %d at index %d placed at:%s\n", grabPieceValue, idx, lp.PlacedAt)
-				_, _, gb = gb.PlacePiecePreview(gb.CurrentPlayer(), lp, *lp.PlacedAt)
+				_, _, gb = gb.PlacePiecePreview(gb.CurrentPlayer(), lp, *lp.PlacedAt, true)
 				grabPieceIdx = idx
 			}
 		}
@@ -214,7 +291,7 @@ func (gb *Gameboard) SwapPiece() {
 func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 	placeXY := Coordinate{X: 0, Y: 0}
 	keepPlacing := true
-	itFits, valid, ngb := gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+	itFits, valid, ngb := gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 	var moveMenu Menu
 
 	for keepPlacing {
@@ -242,41 +319,41 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 				return &ngb
 			case "R": // Right
 				placeXY.X++
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.X--
 					moveMenu.RemoveOption("R")
 				}
 			case "L": // Left
 				placeXY.X--
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.X++
 					moveMenu.RemoveOption("L")
 				}
 			case "U": // Up
 				placeXY.Y--
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.Y++
 					moveMenu.RemoveOption("U")
 				}
 			case "D": // Down
 				placeXY.Y++
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.Y--
 					moveMenu.RemoveOption("D")
 				}
 			case "C": // rotate Clockwise
 				curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
 			case "A": // rotate AntiClockwise
 				curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
@@ -295,7 +372,7 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 // PlacePiecePreview checks if a LandPiece fits on Gameboard at provided Coordinate
 // Then renders the Gameboard depicting the new LandPiece at the provided Coordinate
 // Returns confirmation if the piece could fit, if board in in valid state & the new Gameboard
-func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bool, bool, Gameboard) {
+func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate, overlapOK bool) (bool, bool, Gameboard) {
 	lpStr := lp.String()
 	boardValid := true
 
@@ -317,7 +394,11 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate) (bo
 					}
 					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p, LandPieceValue: lp.Value}
 				} else {
-					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Highlighted: true}
+					if overlapOK {
+						gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, HighlightOK: true}
+					} else {
+						gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, HighlightErr: true}
+					}
 					boardValid = false
 				}
 			}

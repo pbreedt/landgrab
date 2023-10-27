@@ -62,13 +62,17 @@ func (gb Gameboard) String() string {
 type Block struct {
 	Marker         string
 	Belongs_to     *Player
-	Highlighted    bool
+	HighlightErr   bool
+	HighlightOK    bool
 	LandPieceValue uint16
 }
 
 func (b Block) String() string {
-	if b.Highlighted {
+	if b.HighlightErr {
 		return ColorString(fmt.Sprintf("%1s", b.Marker), Red)
+	}
+	if b.HighlightOK {
+		return ColorString(fmt.Sprintf("%1s", b.Marker), Green)
 	}
 	if b.Belongs_to != nil {
 		return ColorString(fmt.Sprintf("%1s", b.Marker), b.Belongs_to.Color)
@@ -88,18 +92,18 @@ var (
 type Color int
 
 const (
-	Black Color = iota
-	Red
-	Green
-	Yellow
+	Black  Color = iota // unused
+	White               // default color
+	Red                 // highlight: error
+	Green               // highlight: ok
+	Yellow              // player colors
 	Blue
 	Magenta
 	Cyan
-	White
 )
 
 func (c Color) String() string {
-	return [...]string{"Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"}[c]
+	return [...]string{"Black", "White", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan"}[c]
 }
 
 func ColorString(s string, c Color) string {

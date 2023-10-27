@@ -7,15 +7,12 @@ import (
 )
 
 var (
-	// Red     = landgrab.Player{Name: "Red", Color: landgrab.Red}
-	Green   = landgrab.Player{Name: "Green", Color: landgrab.Green}
 	Yellow  = landgrab.Player{Name: "Yellow", Color: landgrab.Yellow}
 	Blue    = landgrab.Player{Name: "Blue", Color: landgrab.Blue}
 	Magenta = landgrab.Player{Name: "Magenta", Color: landgrab.Magenta}
 	Cyan    = landgrab.Player{Name: "Cyan", Color: landgrab.Cyan}
-	White   = landgrab.Player{Name: "White", Color: landgrab.White}
 
-	PlayerColors [7]landgrab.Player = [7]landgrab.Player{Green, Yellow, Blue, Magenta, Cyan, White}
+	PlayerColors [7]landgrab.Player = [7]landgrab.Player{Yellow, Magenta, Cyan, Blue}
 )
 
 func main() {
