@@ -25,7 +25,7 @@ func NewGameboard() Gameboard {
 	return gb
 }
 
-func (gb Gameboard) CurrentPlayer() *Player {
+func (gb *Gameboard) CurrentPlayer() *Player {
 	return &gb.Players[gb.currentPlayerIndex]
 }
 
@@ -37,14 +37,14 @@ func (gb *Gameboard) NextPlayer() *Player {
 	return &gb.Players[gb.currentPlayerIndex]
 }
 
-func (gb Gameboard) Display() *LandPiece {
+func (gb *Gameboard) Display() *LandPiece {
 	fmt.Printf("cur.piece:%d, cur.player.idx:%d, cur.player:%s\n", gb.currentPieceIndex, gb.currentPlayerIndex, gb.CurrentPlayer().Name)
 	fmt.Println(gb)
 	curPcIdx := gb.LandPieces.PrintUnplacedN(gb.currentPieceIndex, gb.showNumPieces)
 	return &(*gb.LandPieces)[curPcIdx]
 }
 
-func (gb Gameboard) String() string {
+func (gb *Gameboard) String() string {
 	bsh := ""
 	for i, p := range gb.Players {
 		bsh += fmt.Sprintf("Player %d: %v\n", i+1, p)

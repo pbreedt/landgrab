@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+type GameSummary struct {
+	FinalBoard    Gameboard
+	PlayerSummary []PlayerSummary
+}
+type PlayerSummary struct {
+	Player            Player
+	BiggestArea       Area
+	BiggestSquareArea Area
+}
+
 func (gb *Gameboard) Initialize(players ...Player) {
 	gb.Players = append(gb.Players, players...)
 	areas := StakePlayerAreas(len(players))
@@ -96,17 +106,43 @@ func (gb *Gameboard) Play() {
 		}
 	}
 
-	gb.CheckOccupiedSpace()
+	gs := gb.CheckOccupiedSpace()
+	gs.FinalBoard.Display()
+
+	best := 0
+	var winner string
+
+	for _, ps := range gs.PlayerSummary {
+		if ps.BiggestSquareArea.Size() >= best {
+			if best > 0 && ps.BiggestSquareArea.Size() == best {
+				// draw
+				winner = strings.ReplaceAll(winner, "THE WINNERS ARE ", "THE WINNERS ARE "+ColorString(strings.ToUpper(ps.Player.Name), ps.Player.Color)+" & ")
+				winner = strings.ReplaceAll(winner, "THE WINNER IS ", "THE WINNERS ARE "+ColorString(strings.ToUpper(ps.Player.Name), ps.Player.Color)+" & ")
+			} else {
+				best = ps.BiggestSquareArea.Size()
+				winner = "THE WINNER IS " + ColorString(strings.ToUpper(ps.Player.Name), ps.Player.Color) + "!!"
+			}
+		}
+	}
+
+	fmt.Println(winner)
 }
 
 // CheckOpenSpace returns true/false to indicate if enough open space remains to place more LandPieces
 func (gb Gameboard) CheckOpenSpace() bool {
-	// TODO: implement CheckOpenSpace logic
-	return true
+	for y := 0; y < 12; y++ {
+		for x := 0; x < 12; x++ {
+			block := gb.Board[y][x]
+			if block.Belongs_to == nil || block.Marker == OpenBlock.Marker {
+				return true
+			}
+		}
+	}
+	return false
 }
 
-func (gb Gameboard) CheckOccupiedSpace() bool {
-	log.Default().Printf("Checking occupied space")
+func (gb Gameboard) CheckOccupiedSpace() GameSummary {
+	gs := GameSummary{PlayerSummary: make([]PlayerSummary, len(gb.Players))}
 
 	playerArea := make([]*Area, len(gb.Players))
 
@@ -136,14 +172,27 @@ func (gb Gameboard) CheckOccupiedSpace() bool {
 		}
 	}
 
+	mostArea := 0
 	for i, a := range playerArea {
-		log.Default().Println("Area before solid: ", a)
+
 		maxArea, maxVal := gb.GetMaxSquareArea(*a)
+		if maxVal > mostArea {
+			mostArea = maxVal
+		}
+
+		gs.PlayerSummary[i] = PlayerSummary{
+			Player:            gb.Players[i],
+			BiggestArea:       *a,
+			BiggestSquareArea: maxArea,
+		}
+
 		log.Default().Printf("Player %s max solid area: %s %d", gb.Players[i].Name, maxArea, maxVal)
-		gb.MarkArea(maxArea, gb.Players[i].Name[0:1])
+		gb.MarkArea(maxArea, ColorString(gb.Players[i].Name[0:1], gb.Players[i].Color))
 	}
-	gb.Display()
-	return true
+
+	gs.FinalBoard = gb
+
+	return gs
 }
 
 func (gb Gameboard) GetMaxSquareArea(area Area) (maxArea Area, areaValue int) {
@@ -178,39 +227,8 @@ func (gb Gameboard) IsSolidArea(area Area) (bool, int) {
 		}
 	}
 
-	return true, ((area.End.X - area.Start.X) + 1) * ((area.End.Y - area.Start.Y) + 1)
+	return true, area.Size() //((area.End.X - area.Start.X) + 1) * ((area.End.Y - area.Start.Y) + 1)
 }
-
-// func (gb Gameboard) CheckSolidArea(area Area) (Area, bool) {
-// 	smallest := true
-// 	smallArea := area
-
-// 	for x := area.Start.X; x <= area.End.X; x++ {
-// 		for y := area.Start.Y; y <= area.End.Y; y++ {
-// 			if gb.Board[y][x].Marker != LandPieceBlock.Marker && gb.Board[y][x].Marker != HomeBlock.Marker {
-// 				smallest = false
-// 				if area.Start.Y+1 <= 11 {
-// 					smallArea.Start.Y++
-// 				}
-// 				break
-// 			}
-// 		}
-// 	}
-
-// 	for y := area.Start.Y; y <= area.End.Y; y++ {
-// 		for x := area.Start.X; x <= area.End.X; x++ {
-// 			if gb.Board[y][x].Marker != LandPieceBlock.Marker && gb.Board[y][x].Marker != HomeBlock.Marker {
-// 				smallest = false
-// 				if area.Start.X+1 <= 11 {
-// 					smallArea.Start.X++
-// 				}
-// 				break
-// 			}
-// 		}
-// 	}
-
-// 	return smallArea, smallest
-// }
 
 func (gb *Gameboard) PlaceRock() {
 	placePos := Coordinate{0, 0}
@@ -602,6 +620,10 @@ type Area struct {
 
 func (a Area) String() string {
 	return fmt.Sprintf("%s->%s", a.Start, a.End)
+}
+
+func (a Area) Size() int {
+	return ((a.End.X - a.Start.X) + 1) * ((a.End.Y - a.Start.Y) + 1)
 }
 
 // StakePlayerAreas ensures each player has equal area

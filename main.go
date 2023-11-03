@@ -29,7 +29,7 @@ func main() {
 	for i := 0; i < num_players; i++ {
 		// name, _ := input.ReadString(fmt.Sprintf("Name for player %d? ", i))
 		player := PlayerColors[i]
-		player.Name = []string{"Jan", "Piet", "Koos"}[i]
+		player.Name = []string{"Tom", "Kim", "Zac"}[i]
 		players = append(players, player)
 	}
 
