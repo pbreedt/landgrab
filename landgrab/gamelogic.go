@@ -41,7 +41,9 @@ func (gb *Gameboard) Initialize(players ...Player) {
 }
 
 func (gb *Gameboard) Play() {
-	for {
+	done := false
+
+	for !done {
 		keepTurn := false
 
 		curLandPiece := gb.Display()
@@ -64,7 +66,7 @@ func (gb *Gameboard) Play() {
 		//do move:
 		switch strings.ToUpper(move) {
 		case "Q": // Quit
-			return
+			done = true
 		case "G": // Grab
 			lp := gb.GrabPiece()
 			if lp != nil {
@@ -88,9 +90,127 @@ func (gb *Gameboard) Play() {
 			//next turn:
 			gb.NextPlayer()
 		}
+
+		if !gb.CheckOpenSpace() {
+			done = true
+		}
 	}
 
+	gb.CheckOccupiedSpace()
 }
+
+// CheckOpenSpace returns true/false to indicate if enough open space remains to place more LandPieces
+func (gb Gameboard) CheckOpenSpace() bool {
+	// TODO: implement CheckOpenSpace logic
+	return true
+}
+
+func (gb Gameboard) CheckOccupiedSpace() bool {
+	log.Default().Printf("Checking occupied space")
+
+	playerArea := make([]*Area, len(gb.Players))
+
+	for y := 0; y < 12; y++ {
+		for x := 0; x < 12; x++ {
+			if gb.Board[y][x].Belongs_to != nil {
+				for i, p := range gb.Players {
+					if gb.Board[y][x].Belongs_to.Name == p.Name {
+						if playerArea[i] == nil {
+							playerArea[i] = &Area{Start: Coordinate{X: 11, Y: 11}}
+						}
+						if x < playerArea[i].Start.X {
+							playerArea[i].Start.X = x
+						}
+						if x > playerArea[i].End.X {
+							playerArea[i].End.X = x
+						}
+						if y < playerArea[i].Start.Y {
+							playerArea[i].Start.Y = y
+						}
+						if y > playerArea[i].End.Y {
+							playerArea[i].End.Y = y
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for i, a := range playerArea {
+		log.Default().Println("Area before solid: ", a)
+		maxArea, maxVal := gb.GetMaxSquareArea(*a)
+		log.Default().Printf("Player %s max solid area: %s %d", gb.Players[i].Name, maxArea, maxVal)
+		gb.MarkArea(maxArea, gb.Players[i].Name[0:1])
+	}
+	gb.Display()
+	return true
+}
+
+func (gb Gameboard) GetMaxSquareArea(area Area) (maxArea Area, areaValue int) {
+	for x := area.Start.X; x <= area.End.X; x++ {
+		for y := area.Start.Y; y <= area.End.Y; y++ {
+			start := Coordinate{x, y}
+			end := Coordinate{x, y}
+			for end.X < 12 && end.X <= area.End.X && end.Y < 12 && end.Y <= area.End.Y {
+				tstArea := Area{Start: start, End: end}
+				solid, a := gb.IsSolidArea(tstArea)
+				if solid && a > areaValue {
+					areaValue = a
+					maxArea = tstArea
+					log.Default().Println("TEMP Max area:", areaValue, maxArea)
+				}
+				end.X++
+				end.Y++
+			}
+		}
+	}
+	log.Default().Println("MAX Max area:", areaValue, maxArea)
+	return
+}
+
+func (gb Gameboard) IsSolidArea(area Area) (bool, int) {
+	for x := area.Start.X; x <= area.End.X; x++ {
+		for y := area.Start.Y; y <= area.End.Y; y++ {
+			// log.Default().Printf("Solid test: x=%d, y=%d\n", x, y)
+			if gb.Board[y][x].Marker != LandPieceBlock.Marker && gb.Board[y][x].Marker != HomeBlock.Marker {
+				return false, 0
+			}
+		}
+	}
+
+	return true, ((area.End.X - area.Start.X) + 1) * ((area.End.Y - area.Start.Y) + 1)
+}
+
+// func (gb Gameboard) CheckSolidArea(area Area) (Area, bool) {
+// 	smallest := true
+// 	smallArea := area
+
+// 	for x := area.Start.X; x <= area.End.X; x++ {
+// 		for y := area.Start.Y; y <= area.End.Y; y++ {
+// 			if gb.Board[y][x].Marker != LandPieceBlock.Marker && gb.Board[y][x].Marker != HomeBlock.Marker {
+// 				smallest = false
+// 				if area.Start.Y+1 <= 11 {
+// 					smallArea.Start.Y++
+// 				}
+// 				break
+// 			}
+// 		}
+// 	}
+
+// 	for y := area.Start.Y; y <= area.End.Y; y++ {
+// 		for x := area.Start.X; x <= area.End.X; x++ {
+// 			if gb.Board[y][x].Marker != LandPieceBlock.Marker && gb.Board[y][x].Marker != HomeBlock.Marker {
+// 				smallest = false
+// 				if area.Start.X+1 <= 11 {
+// 					smallArea.Start.X++
+// 				}
+// 				break
+// 			}
+// 		}
+// 	}
+
+// 	return smallArea, smallest
+// }
 
 func (gb *Gameboard) PlaceRock() {
 	placePos := Coordinate{0, 0}
@@ -556,16 +676,6 @@ func StakePlayerAreas(players int) []Area {
 	}
 
 	return areas
-}
-
-func (g *Gameboard) MarkArea(area Area, marker string) {
-	b := Block{Marker: marker}
-
-	for x := area.Start.X; x <= area.End.X; x++ {
-		for y := area.Start.Y; y <= area.End.Y; y++ {
-			g.Board[y][x] = b
-		}
-	}
 }
 
 func GetMovePieceMenu(category string) Menu {

@@ -2,6 +2,7 @@ package landgrab
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/fatih/color"
 )
@@ -187,4 +188,17 @@ func (gb *Gameboard) SetNextLandPieceTo(landPieceIdx int) {
 	(*gb.LandPieces) = append((*gb.LandPieces)[:gb.currentPieceIndex-1], append(LandPiecesSlice{removedLandPiece}, (*gb.LandPieces)[gb.currentPieceIndex-1:]...)...)
 
 	gb.currentPieceIndex--
+}
+
+// MarkArea places provided marker in all blocks of the provided area
+// For testing only
+func (g *Gameboard) MarkArea(area Area, marker string) {
+	b := Block{Marker: marker}
+
+	log.Default().Printf("Marking area: %s with marker %s\n", area, marker)
+	for x := area.Start.X; x <= area.End.X; x++ {
+		for y := area.Start.Y; y <= area.End.Y; y++ {
+			g.Board[y][x] = b
+		}
+	}
 }
