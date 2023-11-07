@@ -202,3 +202,14 @@ func (g *Gameboard) MarkArea(area Area, marker string) {
 		}
 	}
 }
+
+func (g *Gameboard) ReplacePlayer(oldPlayer *Player, newPlayer *Player) {
+	log.Default().Printf("Replacing player: %s with %s\n", oldPlayer.Name, newPlayer.Name)
+	for x := 0; x <= 11; x++ {
+		for y := 0; y <= 11; y++ {
+			if g.Board[y][x].Belongs_to != nil && g.Board[y][x].Belongs_to.Name == oldPlayer.Name {
+				g.Board[y][x].Belongs_to = newPlayer
+			}
+		}
+	}
+}

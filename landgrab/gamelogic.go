@@ -426,6 +426,8 @@ func (gb *Gameboard) SwapPiece() {
 				log.Default().Printf("Current piece: %d", gb.currentPieceIndex)
 				gb.currentPieceIndex = gb.currentPieceIndex + newIdx - 1
 				log.Default().Printf("New piece selected: %d", gb.currentPieceIndex)
+				gb.CurrentPlayer().SwapCards = gb.CurrentPlayer().SwapCards[1:]
+				gb.UpdateCards()
 			}
 		}
 	}
@@ -434,7 +436,8 @@ func (gb *Gameboard) SwapPiece() {
 func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 	placeXY := Coordinate{X: 0, Y: 0}
 	keepPlacing := true
-	itFits, valid, ngb := gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+	tmpP := Player{Name: gb.CurrentPlayer().Name, Color: Green}
+	itFits, valid, ngb := gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 	var moveMenu Menu
 
 	for keepPlacing {
@@ -458,45 +461,46 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 				ngb.currentPieceIndex++
 				log.Default().Printf("Place land piece: mem:%p, placed:%v\n", curLandPiece, curLandPiece.PlacedAt)
 				keepPlacing = false
+				ngb.ReplacePlayer(&tmpP, gb.CurrentPlayer())
 				ngb.UpdateCards()
 				return &ngb
 			case "R": // Right
 				placeXY.X++
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.X--
 					moveMenu.RemoveOption("R")
 				}
 			case "L": // Left
 				placeXY.X--
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.X++
 					moveMenu.RemoveOption("L")
 				}
 			case "U": // Up
 				placeXY.Y--
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.Y++
 					moveMenu.RemoveOption("U")
 				}
 			case "D": // Down
 				placeXY.Y++
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				if !itFits {
 					placeXY.Y--
 					moveMenu.RemoveOption("D")
 				}
 			case "C": // rotate Clockwise
 				curLandPiece.Value, _ = RotateClockwise(curLandPiece.Value)
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
 			case "A": // rotate AntiClockwise
 				curLandPiece.Value, _ = RotateAntiClockwise(curLandPiece.Value)
-				itFits, valid, previewBoard = gb.PlacePiecePreview(gb.CurrentPlayer(), *curLandPiece, placeXY, false)
+				itFits, valid, previewBoard = gb.PlacePiecePreview(&tmpP, *curLandPiece, placeXY, false)
 				//TODO: can not currently happen, undo rotate when it does
 				// if !itFits {
 				// }
