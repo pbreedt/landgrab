@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const boardsize int = 12
+const boardsize int = 20
 
 type Gameboard struct {
 	Board              [boardsize][boardsize]Block
@@ -163,7 +163,7 @@ func (gb *Gameboard) RemoveLandPieceFromGameboard(landPieceIdx int) {
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
-			if lpStr[sidx:sidx+1] == "#" && (lp.PlacedAt.Y+y >= 0) && (lp.PlacedAt.X+x >= 0) && (lp.PlacedAt.Y+y < 16) && (lp.PlacedAt.X+x < 16) {
+			if lpStr[sidx:sidx+1] == "#" && (lp.PlacedAt.Y+y >= 0) && (lp.PlacedAt.X+x >= 0) && (lp.PlacedAt.Y+y < (boardsize + 4)) && (lp.PlacedAt.X+x < (boardsize + 4)) {
 				gb.Board[lp.PlacedAt.Y+y][lp.PlacedAt.X+x] = Block{}
 			}
 		}
@@ -205,8 +205,8 @@ func (gb *Gameboard) MarkArea(area Area, marker string) {
 
 func (gb *Gameboard) ReplacePlayer(oldPlayer *Player, newPlayer *Player) {
 	log.Default().Printf("Replacing player: %s with %s\n", oldPlayer.Name, newPlayer.Name)
-	for x := 0; x <= 11; x++ {
-		for y := 0; y <= 11; y++ {
+	for x := 0; x < boardsize; x++ {
+		for y := 0; y < boardsize; y++ {
 			if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == oldPlayer.Name {
 				gb.Board[y][x].Belongs_to = newPlayer
 			}
@@ -224,7 +224,7 @@ func (gb *Gameboard) IsTouchingOwn(c Coordinate, p Player) bool {
 	}
 
 	for _, tstCoord := range testCoords {
-		if tstCoord.X >= 0 && tstCoord.X < 12 && tstCoord.Y >= 0 && tstCoord.Y < 12 {
+		if tstCoord.X >= 0 && tstCoord.X < boardsize && tstCoord.Y >= 0 && tstCoord.Y < boardsize {
 			if gb.Board[tstCoord.Y][tstCoord.X].Belongs_to != nil && gb.Board[tstCoord.Y][tstCoord.X].Belongs_to.Name == p.Name {
 				return true
 			}
@@ -235,9 +235,9 @@ func (gb *Gameboard) IsTouchingOwn(c Coordinate, p Player) bool {
 	// area := Area{Start: Coordinate{X: c.X - 1, Y: c.Y - 1}, End: Coordinate{X: c.X + 1, Y: c.Y + 1}}
 
 	// for x := area.Start.X; x <= area.End.X; x++ {
-	// 	if x >= 0 && x < 12 {
+	// 	if x >= 0 && x < boardsize {
 	// 		for y := area.Start.Y; y <= area.End.Y; y++ {
-	// 			if y >= 0 && y < 12 {
+	// 			if y >= 0 && y < boardsize {
 	// 				if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == p.Name {
 	// 					return true
 	// 				}

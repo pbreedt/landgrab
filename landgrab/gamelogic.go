@@ -130,8 +130,8 @@ func (gb *Gameboard) Play() {
 
 // CheckOpenSpace returns true/false to indicate if enough open space remains to place more LandPieces
 func (gb Gameboard) CheckOpenSpace() bool {
-	for y := 0; y < 12; y++ {
-		for x := 0; x < 12; x++ {
+	for y := 0; y < boardsize; y++ {
+		for x := 0; x < boardsize; x++ {
 			block := gb.Board[y][x]
 			if block.Belongs_to == nil || block.Marker == OpenBlock.Marker {
 				return true
@@ -146,13 +146,13 @@ func (gb Gameboard) CheckOccupiedSpace() GameSummary {
 
 	playerArea := make([]*Area, len(gb.Players))
 
-	for y := 0; y < 12; y++ {
-		for x := 0; x < 12; x++ {
+	for y := 0; y < boardsize; y++ {
+		for x := 0; x < boardsize; x++ {
 			if gb.Board[y][x].Belongs_to != nil {
 				for i, p := range gb.Players {
 					if gb.Board[y][x].Belongs_to.Name == p.Name {
 						if playerArea[i] == nil {
-							playerArea[i] = &Area{Start: Coordinate{X: 11, Y: 11}}
+							playerArea[i] = &Area{Start: Coordinate{X: boardsize - 1, Y: boardsize - 1}}
 						}
 						if x < playerArea[i].Start.X {
 							playerArea[i].Start.X = x
@@ -172,6 +172,7 @@ func (gb Gameboard) CheckOccupiedSpace() GameSummary {
 		}
 	}
 
+	// TODO: bug: logic incorrectly marked area of another player
 	mostArea := 0
 	for i, a := range playerArea {
 
@@ -186,7 +187,7 @@ func (gb Gameboard) CheckOccupiedSpace() GameSummary {
 			BiggestSquareArea: maxArea,
 		}
 
-		log.Default().Printf("Player %s max solid area: %s %d", gb.Players[i].Name, maxArea, maxVal)
+		log.Default().Printf("Player %s area: %s, max solid area: %s %d", gb.Players[i].Name, a, maxArea, maxVal)
 		gb.MarkArea(maxArea, ColorString(gb.Players[i].Name[0:1], gb.Players[i].Color))
 	}
 
@@ -200,7 +201,7 @@ func (gb Gameboard) GetMaxSquareArea(area Area) (maxArea Area, areaValue int) {
 		for y := area.Start.Y; y <= area.End.Y; y++ {
 			start := Coordinate{x, y}
 			end := Coordinate{x, y}
-			for end.X < 12 && end.X <= area.End.X && end.Y < 12 && end.Y <= area.End.Y {
+			for end.X < boardsize && end.X <= area.End.X && end.Y < boardsize && end.Y <= area.End.Y {
 				tstArea := Area{Start: start, End: end}
 				solid, a := gb.IsSolidArea(tstArea)
 				if solid && a > areaValue {
@@ -256,7 +257,7 @@ func (gb *Gameboard) PlaceRock() {
 				gb.Board[placePos.Y][placePos.X] = Block{Marker: RockBlock.Marker, Belongs_to: gb.CurrentPlayer()}
 				return
 			case "R": // Right
-				if (placePos.X + 1) < 12 {
+				if (placePos.X + 1) < boardsize {
 					placePos.X++
 				} else {
 					selectMenu.RemoveOption("R")
@@ -277,7 +278,7 @@ func (gb *Gameboard) PlaceRock() {
 				}
 				ok, ngb = gb.PreviewPlaceRock(gb.CurrentPlayer(), placePos)
 			case "D": // Down
-				if (placePos.Y + 1) < 12 {
+				if (placePos.Y + 1) < boardsize {
 					placePos.Y++
 				} else {
 					selectMenu.RemoveOption("D")
@@ -292,7 +293,7 @@ func (gb Gameboard) PreviewPlaceRock(p *Player, c Coordinate) (bool, Gameboard) 
 	placeOK := false
 
 	// cannot select at coordinate
-	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
+	if c.Y < 0 || c.Y >= boardsize || c.X < 0 || c.X >= boardsize {
 		return placeOK, gb
 	}
 
@@ -337,7 +338,7 @@ func (gb *Gameboard) GrabPiece() *LandPiece {
 				newLandPiece := &(*gb.LandPieces)[grabPieceIndex]
 				return newLandPiece
 			case "R": // Right
-				if (grabPos.X + 1) < 12 {
+				if (grabPos.X + 1) < boardsize {
 					grabPos.X++
 				} else {
 					selectMenu.RemoveOption("R")
@@ -358,7 +359,7 @@ func (gb *Gameboard) GrabPiece() *LandPiece {
 				}
 				grabPieceIndex, ngb = gb.PreviewGrabPiece(gb.CurrentPlayer(), grabPos)
 			case "D": // Down
-				if (grabPos.Y + 1) < 12 {
+				if (grabPos.Y + 1) < boardsize {
 					grabPos.Y++
 				} else {
 					selectMenu.RemoveOption("D")
@@ -376,13 +377,13 @@ func (gb Gameboard) PreviewGrabPiece(p *Player, c Coordinate) (int, Gameboard) {
 	grabPieceIdx := -1
 
 	// cannot select at coordinate
-	if c.Y < 0 || c.Y >= 12 || c.X < 0 || c.X >= 12 {
+	if c.Y < 0 || c.Y >= boardsize || c.X < 0 || c.X >= boardsize {
 		return 0, gb
 	}
 
 	// TODO: grab replaces placed Rock 'R' with '#'
-	for y := c.Y; y < 12 && grabPieceValue <= 0; y++ {
-		for x := c.X; x < 12 && grabPieceValue <= 0; x++ {
+	for y := c.Y; y < boardsize && grabPieceValue <= 0; y++ {
+		for x := c.X; x < boardsize && grabPieceValue <= 0; x++ {
 			if gb.Board[c.Y][c.X].LandPieceValue > 0 {
 				if grabPieceValue == 0 {
 					grabPieceValue = gb.Board[c.Y][c.X].LandPieceValue
@@ -524,7 +525,7 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate, ove
 	boardValid := true
 	gbCopy := gb
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
-	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
+	if c.Y < 0 || c.Y > (boardsize-4) || c.X < 0 || c.X > (boardsize-4) {
 		log.Default().Printf("Coord %s does not fit\n", c)
 		return false, false, gb
 	}
@@ -533,7 +534,7 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate, ove
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
-			if lpStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
+			if lpStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < (boardsize + 4)) && (c.X+x < (boardsize + 4)) {
 				block := gb.Board[c.Y+y][c.X+x]
 				marker := block.Marker
 				co := Coordinate{X: c.X + x, Y: c.Y + y}
@@ -574,8 +575,8 @@ func GetCardMenu(p Player) Menu {
 }
 
 func (gb *Gameboard) UpdateCards() {
-	for y := 0; y < 12; y++ {
-		for x := 0; x < 12; x++ {
+	for y := 0; y < boardsize; y++ {
+		for x := 0; x < boardsize; x++ {
 			block := gb.Board[y][x]
 			if block.Belongs_to != nil && block.Marker != OpenBlock.Marker && block.Marker != LandPieceBlock.Marker && block.Marker != HomeBlock.Marker {
 				typ := ""
