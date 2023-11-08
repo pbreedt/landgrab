@@ -215,19 +215,36 @@ func (gb *Gameboard) ReplacePlayer(oldPlayer *Player, newPlayer *Player) {
 }
 
 func (gb *Gameboard) IsTouchingOwn(c Coordinate, p Player) bool {
-	area := Area{Start: Coordinate{X: c.X - 1, Y: c.Y - 1}, End: Coordinate{X: c.X + 1, Y: c.Y + 1}}
+	// This logic only allows 'direct' touching (immediately left/right or above/below)
+	testCoords := []Coordinate{
+		{X: c.X - 1, Y: c.Y},
+		{X: c.X + 1, Y: c.Y},
+		{X: c.X, Y: c.Y - 1},
+		{X: c.X, Y: c.Y + 1},
+	}
 
-	for x := area.Start.X; x <= area.End.X; x++ {
-		if x >= 0 && x < 12 {
-			for y := area.Start.Y; y <= area.End.Y; y++ {
-				if y >= 0 && y < 12 {
-					if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == p.Name {
-						return true
-					}
-				}
+	for _, tstCoord := range testCoords {
+		if tstCoord.X >= 0 && tstCoord.X < 12 && tstCoord.Y >= 0 && tstCoord.Y < 12 {
+			if gb.Board[tstCoord.Y][tstCoord.X].Belongs_to != nil && gb.Board[tstCoord.Y][tstCoord.X].Belongs_to.Name == p.Name {
+				return true
 			}
 		}
 	}
+
+	// This logic includes 'diagonal' touching
+	// area := Area{Start: Coordinate{X: c.X - 1, Y: c.Y - 1}, End: Coordinate{X: c.X + 1, Y: c.Y + 1}}
+
+	// for x := area.Start.X; x <= area.End.X; x++ {
+	// 	if x >= 0 && x < 12 {
+	// 		for y := area.Start.Y; y <= area.End.Y; y++ {
+	// 			if y >= 0 && y < 12 {
+	// 				if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == p.Name {
+	// 					return true
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	return false
 }
