@@ -192,24 +192,42 @@ func (gb *Gameboard) SetNextLandPieceTo(landPieceIdx int) {
 
 // MarkArea places provided marker in all blocks of the provided area
 // For testing only
-func (g *Gameboard) MarkArea(area Area, marker string) {
+func (gb *Gameboard) MarkArea(area Area, marker string) {
 	b := Block{Marker: marker}
 
 	log.Default().Printf("Marking area: %s with marker %s\n", area, marker)
 	for x := area.Start.X; x <= area.End.X; x++ {
 		for y := area.Start.Y; y <= area.End.Y; y++ {
-			g.Board[y][x] = b
+			gb.Board[y][x] = b
 		}
 	}
 }
 
-func (g *Gameboard) ReplacePlayer(oldPlayer *Player, newPlayer *Player) {
+func (gb *Gameboard) ReplacePlayer(oldPlayer *Player, newPlayer *Player) {
 	log.Default().Printf("Replacing player: %s with %s\n", oldPlayer.Name, newPlayer.Name)
 	for x := 0; x <= 11; x++ {
 		for y := 0; y <= 11; y++ {
-			if g.Board[y][x].Belongs_to != nil && g.Board[y][x].Belongs_to.Name == oldPlayer.Name {
-				g.Board[y][x].Belongs_to = newPlayer
+			if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == oldPlayer.Name {
+				gb.Board[y][x].Belongs_to = newPlayer
 			}
 		}
 	}
+}
+
+func (gb *Gameboard) IsTouchingOwn(c Coordinate, p Player) bool {
+	area := Area{Start: Coordinate{X: c.X - 1, Y: c.Y - 1}, End: Coordinate{X: c.X + 1, Y: c.Y + 1}}
+
+	for x := area.Start.X; x <= area.End.X; x++ {
+		if x >= 0 && x < 12 {
+			for y := area.Start.Y; y <= area.End.Y; y++ {
+				if y >= 0 && y < 12 {
+					if gb.Board[y][x].Belongs_to != nil && gb.Board[y][x].Belongs_to.Name == p.Name {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }

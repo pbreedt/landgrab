@@ -206,14 +206,14 @@ func (gb Gameboard) GetMaxSquareArea(area Area) (maxArea Area, areaValue int) {
 				if solid && a > areaValue {
 					areaValue = a
 					maxArea = tstArea
-					log.Default().Println("TEMP Max area:", areaValue, maxArea)
+					// log.Default().Println("TEMP Max area:", areaValue, maxArea)
 				}
 				end.X++
 				end.Y++
 			}
 		}
 	}
-	log.Default().Println("MAX Max area:", areaValue, maxArea)
+	// log.Default().Println("MAX Max area:", areaValue, maxArea)
 	return
 }
 
@@ -522,21 +522,24 @@ func (gb *Gameboard) PlacePiece(curLandPiece *LandPiece) *Gameboard {
 func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate, overlapOK bool) (bool, bool, Gameboard) {
 	lpStr := lp.String()
 	boardValid := true
-
+	gbCopy := gb
 	// TODO: replace below with g.LandPieceFits() & cater for moving outside GameBoard for smaller pieces
 	if c.Y < 0 || c.Y > 8 || c.X < 0 || c.X > 8 {
 		log.Default().Printf("Coord %s does not fit\n", c)
 		return false, false, gb
 	}
 
+	touchingHome := false
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			sidx := x + (y * 4)
 			if lpStr[sidx:sidx+1] == "#" && (c.Y+y >= 0) && (c.X+x >= 0) && (c.Y+y < 16) && (c.X+x < 16) {
 				block := gb.Board[c.Y+y][c.X+x]
 				marker := block.Marker
+				co := Coordinate{X: c.X + x, Y: c.Y + y}
+				touchingHome = touchingHome || gbCopy.IsTouchingOwn(co, *p)
 				if block.Belongs_to == nil || (block.Belongs_to.Name == p.Name) {
-					if strings.Trim(marker, " ") == OpenBlock.Marker {
+					if strings.TrimSpace(marker) == OpenBlock.Marker {
 						marker = LandPieceBlock.Marker
 					}
 					gb.Board[c.Y+y][c.X+x] = Block{Marker: marker, Belongs_to: p, LandPieceValue: lp.Value}
@@ -552,9 +555,7 @@ func (gb Gameboard) PlacePiecePreview(p *Player, lp LandPiece, c Coordinate, ove
 		}
 	}
 
-	// fmt.Println(g)
-
-	return true, boardValid, gb // it fits
+	return true, (boardValid && touchingHome), gb
 }
 
 func GetCardMenu(p Player) Menu {
